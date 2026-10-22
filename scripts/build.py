@@ -12,10 +12,13 @@ macos.mkdir(parents=True, exist_ok=True)
 shutil.copy2(pathlib.Path(bindir) / "CalendarBar", macos / "CalendarBar")
 (app / "Contents/Resources").mkdir(exist_ok=True)
 shutil.copy2(root / "Resources/AppIcon.icns", app / "Contents/Resources/AppIcon.icns")
+for lproj in ("en.lproj", "ko.lproj"):
+    shutil.copytree(root / "Resources" / lproj, app / "Contents/Resources" / lproj, dirs_exist_ok=True)
 info = {
     "CFBundleExecutable": "CalendarBar", "CFBundleIdentifier": "local.ian.CalendarBar",
     "CFBundleName": "CalendarBar", "CFBundleDisplayName": "Calendar Bar",
     "CFBundlePackageType": "APPL", "CFBundleIconFile": "AppIcon", "CFBundleVersion": "1", "CFBundleShortVersionString": "1.0",
+    "CFBundleDevelopmentRegion": "en", "CFBundleLocalizations": ["en", "ko"],
     "LSMinimumSystemVersion": "14.0", "LSUIElement": True,
     "NSHighResolutionCapable": True,
     "NSCalendarsFullAccessUsageDescription": "Reads and shows events from the calendars you select. It never adds or changes events.",

@@ -37,7 +37,7 @@ public final class MenuBarController: NSObject, NSPopoverDelegate {
         if let button = statusItem.button {
             button.target = self
             button.action = #selector(togglePopover)
-            button.setAccessibilityLabel("Open Calendar")
+            button.setAccessibilityLabel(String(localized: "Open Calendar"))
         }
         let center = NotificationCenter.default
         center.addObserver(self, selector: #selector(applicationDeactivated), name: NSApplication.didResignActiveNotification, object: NSApp)
@@ -145,7 +145,7 @@ public final class MenuBarController: NSObject, NSPopoverDelegate {
             lastDate = components
             lastTimeZone = zone
             statusItem.button?.image = Self.calendarImage(day: StatusDate.day(at: now, timeZone: zone))
-            statusItem.button?.toolTip = "Open Calendar · Today \(components.month!)/\(components.day!)"
+            statusItem.button?.toolTip = String(localized: "Open Calendar · Today \(components.month!)/\(components.day!)")
             onDateChange(now)
         }
         midnightTimer?.invalidate()
@@ -176,7 +176,7 @@ public final class MenuBarController: NSObject, NSPopoverDelegate {
             return true
         }
         image.isTemplate = true
-        image.accessibilityDescription = "Today \(day)"
+        image.accessibilityDescription = String(localized: "Today \(day)")
         return image
     }
 }

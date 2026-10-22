@@ -35,7 +35,6 @@ import ServiceManagement
         }
         .frame(width: 340, height: 600)
         .background(Color(nsColor: .windowBackgroundColor))
-        .environment(\.locale, Locale(identifier: "en_US"))
         .onDisappear { resetPaging() }
         .onChange(of: model.access.permission) { _, _ in model.clearInaccessibleEditor() }
         .onChange(of: model.access.calendars) { _, _ in model.clearInaccessibleEditor() }
@@ -46,7 +45,7 @@ import ServiceManagement
     private var calendarPage: some View {
         VStack(spacing: 0) {
             HStack(spacing: 13) {
-                Text(model.formatted(model.calendar.displayedMonth, "MMMM yyyy"))
+                Text(model.localized(model.calendar.displayedMonth, "yMMMM"))
                     .font(.system(size: 18, weight: .semibold)).accessibilityAddTraits(.isHeader)
                 Spacer()
                 Button("Today") { model.open() }.font(.system(size: 11)).buttonStyle(.bordered)
@@ -56,7 +55,7 @@ import ServiceManagement
                     .accessibilityLabel("Next month")
             }.buttonStyle(.plain).padding(.horizontal, 20).padding(.top, 20).padding(.bottom, 16)
             HStack(spacing: 0) {
-                ForEach(Array(["S", "M", "T", "W", "T", "F", "S"].enumerated()), id: \.offset) { index, day in
+                ForEach(Array(model.weekdaySymbols.enumerated()), id: \.offset) { index, day in
                     Text(day).font(.system(size: 11, weight: .medium))
                         .foregroundStyle(index == 0 ? .red.opacity(0.7) : .secondary)
                         .frame(maxWidth: .infinity)
@@ -65,9 +64,9 @@ import ServiceManagement
             monthPager.padding(.bottom, 14)
             Divider().padding(.horizontal, 20)
             HStack {
-                Text(model.formatted(model.calendar.selectedDate, "EEEE, MMMM d")).font(.system(size: 13, weight: .semibold))
+                Text(model.localized(model.calendar.selectedDate, "MMMMdEEEE")).font(.system(size: 13, weight: .semibold))
                 Spacer()
-                if model.access.state == .loaded { Text(model.selectedEvents.count == 1 ? "1 event" : "\(model.selectedEvents.count) events").foregroundStyle(.secondary).font(.system(size: 11)) }
+                if model.access.state == .loaded { Text(model.selectedEvents.count == 1 ? String(localized: "1 event") : String(localized: "\(model.selectedEvents.count) events")).foregroundStyle(.secondary).font(.system(size: 11)) }
             }.padding(.horizontal, 20).padding(.top, 15).padding(.bottom, 10)
             agenda.frame(maxHeight: .infinity)
             Divider()
@@ -200,7 +199,7 @@ import ServiceManagement
                 }
             }.padding(8).background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 6))
             Picker("View", selection: Binding(get: { model.tab }, set: { model.setTab($0) })) {
-                ForEach(CalendarTab.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+                ForEach(CalendarTab.allCases, id: \.self) { Text($0.title).tag($0) }
             }.pickerStyle(.segmented)
         }.padding(.horizontal, 16).padding(.top, 14).padding(.bottom, 8)
     }
@@ -212,7 +211,7 @@ import ServiceManagement
                 Text("End date must be after the start date.").font(.caption).foregroundStyle(.red)
                 Spacer()
             } else {
-                Text("\(model.formatted(model.searchStart, "yyyy.MM.dd")) – \(model.formatted(model.searchEnd, "yyyy.MM.dd")) · \(model.searchState == .loaded ? "\(model.searchResults.count) results" : "Searching")")
+                Text(verbatim: "\(model.localized(model.searchStart, "yMMdd")) – \(model.localized(model.searchEnd, "yMMdd")) · \(model.searchState == .loaded ? String(localized: "\(model.searchResults.count) results") : String(localized: "Searching"))")
                     .font(.caption).foregroundStyle(.secondary)
                 Divider()
                 if model.searchState == .loaded {
@@ -235,7 +234,7 @@ import ServiceManagement
     }
     private var upcomingPage: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("\(model.formatted(model.agendaInterval.start, "MMM d")) – \(model.formatted(model.agendaInterval.end.addingTimeInterval(-1), "MMM d"))")
+            Text(verbatim: "\(model.localized(model.agendaInterval.start, "MMMd")) – \(model.localized(model.agendaInterval.end.addingTimeInterval(-1), "MMMd"))")
                 .font(.caption).foregroundStyle(.secondary)
             Divider()
             if model.agendaState == .loaded {
@@ -243,7 +242,7 @@ import ServiceManagement
                     LazyVStack(alignment: .leading, spacing: 14) {
                         if model.agendaGroups.isEmpty { Text("No upcoming events").foregroundStyle(.secondary) }
                         ForEach(model.agendaGroups) { group in
-                            Text(model.formatted(group.day, "EEEE, MMMM d")).font(.system(size: 13, weight: .semibold)).accessibilityAddTraits(.isHeader)
+                            Text(model.localized(group.day, "MMMMdEEEE")).font(.system(size: 13, weight: .semibold)).accessibilityAddTraits(.isHeader)
                             ForEach(group.events.map { AgendaDisplayRow(day: group.day, event: $0) }) { row in
                                 let event = row.event
                                 EventDisplayRow(event: event, time: agendaTime(event, day: group.day), highlighted: false,
@@ -260,13 +259,13 @@ import ServiceManagement
         }.padding(16)
     }
     private var loading: some View { ProgressView().controlSize(.small).frame(maxWidth: .infinity, maxHeight: .infinity) }
-    private func emptyMessage(_ message: String) -> some View { Text(message).font(.system(size: 13)).foregroundStyle(.secondary).frame(maxWidth: .infinity, maxHeight: .infinity) }
+    private func emptyMessage(_ message: LocalizedStringKey) -> some View { Text(message).font(.system(size: 13)).foregroundStyle(.secondary).frame(maxWidth: .infinity, maxHeight: .infinity) }
     private func resultTime(_ event: EventOccurrence) -> String {
-        model.formatted(event.start, "M/d") + " " + (event.isAllDay ? "All day" : model.formatted(event.start, "HH:mm"))
+        model.localized(event.start, "Md") + " " + (event.isAllDay ? String(localized: "All day") : model.formatted(event.start, "HH:mm"))
     }
     private func agendaTime(_ event: EventOccurrence, day: Date) -> String {
-        if event.isAllDay { return event.start < day ? "All day · In progress" : "All day" }
-        return event.start < day ? "In progress" : model.formatted(event.start, "HH:mm")
+        if event.isAllDay { return event.start < day ? String(localized: "All day · In progress") : String(localized: "All day") }
+        return event.start < day ? String(localized: "In progress") : model.formatted(event.start, "HH:mm")
     }
     private var settings: some View {
         ScrollView {
@@ -353,8 +352,8 @@ struct AgendaDisplayRow: Identifiable {
                 Image(systemName: delivery?.scheduled ?? 0 > 0 ? "bell.fill" : delivery?.desiredEnabled == true ? "bell.badge" : "bell")
                     .foregroundStyle(delivery?.scheduled ?? 0 > 0 ? Color.accentColor : .secondary)
             }
-                .buttonStyle(.plain).accessibilityLabel("Reminder settings: " + event.title + ", " + (delivery?.state.label ?? "Reminders off"))
-                .help(delivery.map { "\($0.state.label) · \($0.scheduled) scheduled · \($0.deferred) deferred" } ?? "Reminders off")
+                .buttonStyle(.plain).accessibilityLabel(Text("Reminder settings: \(event.title), \(delivery?.state.label ?? String(localized: "Reminders off"))"))
+                .help(delivery.map { String(localized: "\($0.state.label) · \($0.scheduled) scheduled · \($0.deferred) deferred") } ?? String(localized: "Reminders off"))
         }.padding(4).background(highlighted ? Color.accentColor.opacity(0.12) : .clear, in: RoundedRectangle(cornerRadius: 4))
     }
     private var content: some View {

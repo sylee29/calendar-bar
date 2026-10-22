@@ -6,13 +6,13 @@ import CalendarNotifications
 extension ReminderDeliveryState {
     var label: String {
         switch self {
-        case .updating: return "Checking schedule"
-        case .scheduled: return "Scheduled"
-        case .partial: return "Partly scheduled · rest needs checking"
-        case .permissionRequired: return "Notification or calendar permission needed"
-        case .failed: return "Scheduling failed · please try again"
-        case .needsConfirmation: return "Event change needs confirmation"
-        case .noFuture: return "No future reminders scheduled"
+        case .updating: return String(localized: "Checking schedule")
+        case .scheduled: return String(localized: "Scheduled")
+        case .partial: return String(localized: "Partly scheduled · rest needs checking")
+        case .permissionRequired: return String(localized: "Notification or calendar permission needed")
+        case .failed: return String(localized: "Scheduling failed · please try again")
+        case .needsConfirmation: return String(localized: "Event change needs confirmation")
+        case .noFuture: return String(localized: "No future reminders scheduled")
         }
     }
 }
@@ -20,7 +20,7 @@ extension ReminderDeliveryState {
     let snapshot: ReminderDeliverySnapshot
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(snapshot.desiredEnabled ? "Reminders on" : "Reminders off").font(.caption)
+            Text(snapshot.desiredEnabled ? String(localized: "Reminders on") : String(localized: "Reminders off")).font(.caption)
             Text(snapshot.state.label).font(.caption).foregroundStyle(.secondary)
             Text("\(snapshot.scheduled) scheduled · \(snapshot.deferred) deferred").font(.caption).foregroundStyle(.secondary)
         }.accessibilityElement(children: .combine)
@@ -39,7 +39,7 @@ extension ReminderDeliveryState {
                 }
                 if let event = model.selectedReminderEvent, let draft = model.reminderDraft, model.canDisplayReminder {
                     Text(event.title).font(.headline)
-                    Text(model.formatted(event.start, event.isAllDay ? "MMM d · 'All day'" : "MMM d HH:mm")).font(.caption).foregroundStyle(.secondary)
+                    Text(event.isAllDay ? model.localized(event.start, "MMMd") + " · " + String(localized: "All day") : model.localized(event.start, "MMMdHHmm")).font(.caption).foregroundStyle(.secondary)
                     ReminderStatusView(snapshot: reminders.snapshot(for: event))
                     Divider()
                     if event.isRecurring {
@@ -98,7 +98,7 @@ extension ReminderDeliveryState {
                 }.textFieldStyle(.roundedBorder).font(.system(size: 12))
             }
             Button("Add Reminder Time") { rows.append(ReminderTriggerDraft(format == .timed ? try! .timed(hours: 0, minutes: 10) : try! .allDay(daysBefore: 1, hour: 21, minute: 0))) }
-            Text(format == .timed ? "At least 1 min before · minutes 0–59" : "0 days before = same day · hour 0–23, minute 0–59 · current time zone").font(.caption).foregroundStyle(.secondary)
+            Text(format == .timed ? String(localized: "At least 1 min before · minutes 0–59") : String(localized: "0 days before = same day · hour 0–23, minute 0–59 · current time zone")).font(.caption).foregroundStyle(.secondary)
         }
     }
 }
@@ -128,12 +128,12 @@ extension ReminderDeliveryState {
         VStack(alignment: .leading, spacing: 12) {
             Text("Reminders").font(.headline)
             Text("\(reminders.scheduled) scheduled · \(reminders.deferred) deferred · \(reminders.needsConfirmation) need confirmation").font(.caption)
-            if let date = reminders.lastScheduled { Text("Last checked: \(date.formatted(Date.FormatStyle(date: .abbreviated, time: .shortened).locale(Locale(identifier: "en_US"))))").font(.caption).foregroundStyle(.secondary) }
+            if let date = reminders.lastScheduled { Text("Last checked: \(date.formatted(date: .abbreviated, time: .shortened))").font(.caption).foregroundStyle(.secondary) }
             else { Text("No reminders scheduled yet.").font(.caption).foregroundStyle(.secondary) }
             Button("Recheck Schedule") { Task { await reminders.retry() } }
             ReminderPermissionView(reminders: reminders)
             Toggle("Hide Reminder Title and Time", isOn: Binding(get: { reminders.settings.hideContent }, set: { value in
-                Task { do { try await reminders.setHideContent(value); error = nil } catch { self.error = "Couldn't save the reminder content setting." } }
+                Task { do { try await reminders.setHideContent(value); error = nil } catch { self.error = String(localized: "Couldn't save the reminder content setting.") } }
             })).toggleStyle(.checkbox)
             Text("Timed Event Defaults").font(.subheadline)
             TriggerFields(rows: $timed, format: .timed)
@@ -144,7 +144,7 @@ extension ReminderDeliveryState {
                     do {
                         try await reminders.updateDefaults(ReminderDefaults(timed: timed.map { try $0.trigger(format: .timed) }, allDay: allDay.map { try $0.trigger(format: .allDay) }))
                         error = nil; saved = true
-                    } catch { self.error = "Couldn't save default times. Enter at least one valid time for each format."; saved = false }
+                    } catch { self.error = String(localized: "Couldn't save default times. Enter at least one valid time for each format."); saved = false }
                 }
             }
             if saved { Text("Default times saved · existing events are unchanged.").font(.caption).foregroundStyle(.secondary) }

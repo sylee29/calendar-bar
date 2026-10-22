@@ -12,7 +12,10 @@ enum MonthSwipe {
     }
 }
 
-enum CalendarTab: String, CaseIterable { case calendar = "Calendar", upcoming = "Upcoming" }
+enum CalendarTab: String, CaseIterable {
+    case calendar = "Calendar", upcoming = "Upcoming"
+    var title: String { self == .calendar ? String(localized: "Calendar") : String(localized: "Upcoming") }
+}
 
 @Observable @MainActor final class CalendarModel {
     private(set) var tab: CalendarTab = .calendar
@@ -159,10 +162,10 @@ enum CalendarTab: String, CaseIterable { case calendar = "Calendar", upcoming = 
         guard revision == navigationRevision else { return }
         switch result {
         case .found(let current): goToResolvedOccurrence(current)
-        case .connectionRequired: navigationMessage = "Calendar access isn't allowed."
-        case .failed: navigationMessage = "Couldn't check the event. Please try again."
+        case .connectionRequired: navigationMessage = String(localized: "Calendar access isn't allowed.")
+        case .failed: navigationMessage = String(localized: "Couldn't check the event. Please try again.")
         default:
-            navigationMessage = "This event can no longer be shown."
+            navigationMessage = String(localized: "This event can no longer be shown.")
             if isSearching { // Refresh without replacing the resolution message.
                 let message = navigationMessage
                 scheduleSearch()
@@ -205,12 +208,12 @@ enum CalendarTab: String, CaseIterable { case calendar = "Calendar", upcoming = 
             guard editingID == reminderEditingID else { return }
             guard canDisplayReminder else { clearInaccessibleEditor(); return }
             guard case .found(let current) = result else {
-                reminderError = "Couldn't verify the current event. Refresh the calendar and try again."
+                reminderError = String(localized: "Couldn't verify the current event. Refresh the calendar and try again.")
                 return
             }
             guard current.isAllDay == draft.event.isAllDay else {
                 editReminder(current)
-                reminderError = "The event format changed. Review the new reminder times and save again."
+                reminderError = String(localized: "The event format changed. Review the new reminder times and save again.")
                 return
             }
             let rule = try draft.rule(enabled: enabled)
@@ -219,7 +222,7 @@ enum CalendarTab: String, CaseIterable { case calendar = "Calendar", upcoming = 
             clearInaccessibleEditor()
             // Keep the editor open so actual delivery state and permission failures stay visible.
             if editingID == reminderEditingID && canDisplayReminder { editReminder(draft.event) }
-        } catch { if editingID == reminderEditingID && canDisplayReminder { reminderError = "Couldn't save. Check the numbers and reminder times, then try again." } }
+        } catch { if editingID == reminderEditingID && canDisplayReminder { reminderError = String(localized: "Couldn't save. Check the numbers and reminder times, then try again.") } }
     }
     func resumeInheritedReminder() async {
         guard !reminderBusy, let reminders, let draft = reminderDraft, let existing = draft.existing, existing.scope == .thisOccurrence, canDisplayReminder else { return }
@@ -229,7 +232,7 @@ enum CalendarTab: String, CaseIterable { case calendar = "Calendar", upcoming = 
         do {
             try await reminders.removeOverride(identity: existing.identity, anchor: existing.anchor)
             if editingID == reminderEditingID && canDisplayReminder { editReminder(draft.event) }
-        } catch { if editingID == reminderEditingID && canDisplayReminder { reminderError = "Couldn't clear the override. Please try again." } }
+        } catch { if editingID == reminderEditingID && canDisplayReminder { reminderError = String(localized: "Couldn't clear the override. Please try again.") } }
     }
     func routeReminder(token: String) async {
         cancelReminder()
@@ -237,11 +240,11 @@ enum CalendarTab: String, CaseIterable { case calendar = "Calendar", upcoming = 
         let revision = navigationRevision
         presentationID = UUID()
         showingSettings = false
-        navigationMessage = "Checking event…"
+        navigationMessage = String(localized: "Checking event…")
         isResolvingReminder = true
         defer { if revision == navigationRevision { isResolvingReminder = false } }
         guard let link = reminders?.clickLink(token: token) else {
-            navigationMessage = "Can't find the event for this reminder. Look it up in your calendar again."
+            navigationMessage = String(localized: "Can't find the event for this reminder. Look it up in your calendar again.")
             return
         }
         let start: Date
@@ -254,28 +257,42 @@ enum CalendarTab: String, CaseIterable { case calendar = "Calendar", upcoming = 
         guard revision == navigationRevision else { return }
         switch result {
         case .found(let event): goToResolvedOccurrence(event)
-        case .connectionRequired: navigationMessage = "Allow calendar access, then check again."
-        case .outsideSelectedScope: navigationMessage = "This event is in a calendar that isn't selected. Select the calendar in Settings."
-        case .needsConfirmation: navigationMessage = "This event's link needs confirmation. Find it again with search."
-        case .failed: navigationMessage = "Couldn't check the event. Please try again."
-        case .missing, .outsideQuery: navigationMessage = "This event can't be found right now. Look it up in your calendar again."
+        case .connectionRequired: navigationMessage = String(localized: "Allow calendar access, then check again.")
+        case .outsideSelectedScope: navigationMessage = String(localized: "This event is in a calendar that isn't selected. Select the calendar in Settings.")
+        case .needsConfirmation: navigationMessage = String(localized: "This event's link needs confirmation. Find it again with search.")
+        case .failed: navigationMessage = String(localized: "Couldn't check the event. Please try again.")
+        case .missing, .outsideQuery: navigationMessage = String(localized: "This event can't be found right now. Look it up in your calendar again.")
         }
     }
     func waitForRefresh() async { await refreshTask?.value }
     func formatted(_ date: Date, _ format: String) -> String {
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_US")
+        formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.calendar = calendar.context.calendar
         formatter.timeZone = calendar.context.calendar.timeZone
         formatter.dateFormat = format
         return formatter.string(from: date)
     }
+    /// Formats for display in the user's system locale; `template` is a date-format skeleton.
+    func localized(_ date: Date, _ template: String) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = .current
+        formatter.calendar = calendar.context.calendar
+        formatter.timeZone = calendar.context.calendar.timeZone
+        formatter.setLocalizedDateFormatFromTemplate(template)
+        return formatter.string(from: date)
+    }
+    var weekdaySymbols: [String] {
+        let formatter = DateFormatter()
+        formatter.locale = .current
+        return formatter.veryShortStandaloneWeekdaySymbols
+    }
     var selectedEvents: [EventOccurrence] {
         EventIndex.events(on: calendar.selectedDate, in: access.events, context: calendar.context)
     }
     func timeLabel(_ event: EventOccurrence) -> String {
-        if event.isAllDay { return event.start < calendar.selectedDate ? "All day · In progress" : "All day" }
-        if event.start < calendar.selectedDate { return "In progress" }
-        return formatted(event.start, "a h:mm")
+        if event.isAllDay { return event.start < calendar.selectedDate ? String(localized: "All day · In progress") : String(localized: "All day") }
+        if event.start < calendar.selectedDate { return String(localized: "In progress") }
+        return localized(event.start, "jmm")
     }
 }

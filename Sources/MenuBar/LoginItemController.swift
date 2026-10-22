@@ -43,8 +43,8 @@ public final class SystemLoginItemBackend: LoginItemBackend {
         case .enabled: return .enabled
         case .notRegistered: return .disabled
         case .requiresApproval: return .requiresApproval
-        case .notFound: return .failure("Login item not found. Check where the app is installed.")
-        @unknown default: return .failure("Couldn't determine the login item status.")
+        case .notFound: return .failure(String(localized: "Login item not found. Check where the app is installed."))
+        @unknown default: return .failure(String(localized: "Couldn't determine the login item status."))
         }
     }
     public func register() throws { try SMAppService.mainApp.register() }

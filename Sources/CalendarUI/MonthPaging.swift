@@ -47,10 +47,10 @@ struct MonthGridPage: View, Equatable {
         let calendar = state.context.calendar
         let formatter = DateFormatter()
         let _ = {
-            formatter.locale = Locale(identifier: "en_US")
+            formatter.locale = .current
             formatter.calendar = calendar
             formatter.timeZone = calendar.timeZone
-            formatter.dateFormat = "EEEE, MMMM d, yyyy"
+            formatter.setLocalizedDateFormatFromTemplate("yMMMMdEEEE")
         }()
         LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 0), count: 7), spacing: 3) {
             ForEach(state.grid.days, id: \.self) { day in
@@ -74,7 +74,7 @@ struct MonthGridPage: View, Equatable {
                         }.frame(height: 5)
                     }.frame(maxWidth: .infinity).frame(height: 38).contentShape(Rectangle())
                 }.buttonStyle(.plain)
-                    .accessibilityLabel(formatter.string(from: day) + (today ? ", today" : "") + (selected ? ", selected" : ""))
+                    .accessibilityLabel(formatter.string(from: day) + (today ? String(localized: ", today") : "") + (selected ? String(localized: ", selected") : ""))
             }
         }.padding(.horizontal, 16)
     }

@@ -14,6 +14,7 @@ Click the icon to open a monthly calendar; click outside to close it. No main wi
 - "This event only" and "This and future events" scopes for recurring events, plus reminders for all-day events
 - Already-scheduled reminders are delivered even after the app quits; clicking a reminder opens that event
 - Choose which calendars to show, and launch at login
+- English and Korean UI, following your macOS system language
 
 ## Install and run
 
