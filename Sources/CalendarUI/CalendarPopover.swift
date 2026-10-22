@@ -20,7 +20,7 @@ import ServiceManagement
     var body: some View {
         VStack(spacing: 0) {
             if model.isResolvingReminder {
-                VStack(spacing: 12) { ProgressView(); Text("일정을 확인하는 중…").font(.caption) }.frame(maxWidth: .infinity, maxHeight: .infinity)
+                VStack(spacing: 12) { ProgressView(); Text("Checking events…").font(.caption) }.frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             else if model.canDisplayReminder, let reminders = model.reminders { ReminderEditorView(model: model, reminders: reminders) }
             else if model.showingSettings { settings } else {
@@ -45,17 +45,17 @@ import ServiceManagement
     private var calendarPage: some View {
         VStack(spacing: 0) {
             HStack(spacing: 13) {
-                Text(model.formatted(model.calendar.displayedMonth, "yyyy년 M월"))
+                Text(model.formatted(model.calendar.displayedMonth, "MMMM yyyy"))
                     .font(.system(size: 18, weight: .semibold)).accessibilityAddTraits(.isHeader)
                 Spacer()
-                Button("오늘") { model.open() }.font(.system(size: 11)).buttonStyle(.bordered)
+                Button("Today") { model.open() }.font(.system(size: 11)).buttonStyle(.bordered)
                 Button { settleMonth(-1) } label: { Image(systemName: "chevron.left") }
-                    .accessibilityLabel("이전 달")
+                    .accessibilityLabel("Previous month")
                 Button { settleMonth(1) } label: { Image(systemName: "chevron.right") }
-                    .accessibilityLabel("다음 달")
+                    .accessibilityLabel("Next month")
             }.buttonStyle(.plain).padding(.horizontal, 20).padding(.top, 20).padding(.bottom, 16)
             HStack(spacing: 0) {
-                ForEach(Array(["일", "월", "화", "수", "목", "금", "토"].enumerated()), id: \.offset) { index, day in
+                ForEach(Array(["S", "M", "T", "W", "T", "F", "S"].enumerated()), id: \.offset) { index, day in
                     Text(day).font(.system(size: 11, weight: .medium))
                         .foregroundStyle(index == 0 ? .red.opacity(0.7) : .secondary)
                         .frame(maxWidth: .infinity)
@@ -64,15 +64,15 @@ import ServiceManagement
             monthPager.padding(.bottom, 14)
             Divider().padding(.horizontal, 20)
             HStack {
-                Text(model.formatted(model.calendar.selectedDate, "M월 d일 EEEE")).font(.system(size: 13, weight: .semibold))
+                Text(model.formatted(model.calendar.selectedDate, "EEEE, MMMM d")).font(.system(size: 13, weight: .semibold))
                 Spacer()
-                if model.access.state == .loaded { Text("일정 \(model.selectedEvents.count)개").foregroundStyle(.secondary).font(.system(size: 11)) }
+                if model.access.state == .loaded { Text(model.selectedEvents.count == 1 ? "1 event" : "\(model.selectedEvents.count) events").foregroundStyle(.secondary).font(.system(size: 11)) }
             }.padding(.horizontal, 20).padding(.top, 15).padding(.bottom, 10)
             agenda.frame(maxHeight: .infinity)
             Divider()
             HStack {
                 Button { model.showingSettings = true; login.refresh() } label: { Image(systemName: "gearshape").font(.system(size: 14)) }
-                    .buttonStyle(.plain).foregroundStyle(.secondary).accessibilityLabel("설정")
+                    .buttonStyle(.plain).foregroundStyle(.secondary).accessibilityLabel("Settings")
                 Spacer()
             }.padding(.horizontal, 20).padding(.vertical, 12)
         }
@@ -143,7 +143,7 @@ import ServiceManagement
         switch model.access.state {
         case .loaded:
             if model.selectedEvents.isEmpty {
-                VStack { Spacer(); Text("일정 없음").font(.system(size: 13)).foregroundStyle(.secondary); Spacer() }
+                VStack { Spacer(); Text("No events").font(.system(size: 13)).foregroundStyle(.secondary); Spacer() }
             } else {
                 ScrollViewReader { proxy in
                 ScrollView {
@@ -167,23 +167,23 @@ import ServiceManagement
             switch state {
             case .connectionRequired:
                 if model.access.permission == .denied || model.access.permission == .restricted {
-                    Text("캘린더 접근이 허용되지 않았습니다.")
-                    Button("시스템 설정 열기") { openSettings("x-apple.systempreferences:com.apple.preference.security?Privacy_Calendars") }
+                    Text("Calendar access isn't allowed.")
+                    Button("Open System Settings") { openSettings("x-apple.systempreferences:com.apple.preference.security?Privacy_Calendars") }
                 } else {
-                    Text("캘린더를 연결해 일정을 확인하세요.")
-                    Text("macOS는 전체 접근 권한을 요청합니다.\n이 앱은 일정을 읽기만 합니다.").font(.system(size: 10)).foregroundStyle(.secondary)
-                    Button("캘린더 연결") { Task { await model.access.requestAccess() } }
+                    Text("Connect your calendars to see events.")
+                    Text("macOS asks for full access.\nThis app only reads events.").font(.system(size: 10)).foregroundStyle(.secondary)
+                    Button("Connect Calendar") { Task { await model.access.requestAccess() } }
                 }
             case .noCalendars:
-                Text("연결된 캘린더가 없습니다.")
-                Text("인터넷 계정에서 Google 등을 추가하고\n캘린더 동기화를 켜 주세요.").font(.system(size: 10)).foregroundStyle(.secondary)
-                Button("인터넷 계정 열기") { openSettings("x-apple.systempreferences:com.apple.preferences.internetaccounts") }
+                Text("No calendars connected.")
+                Text("Add Google or another account in Internet Accounts\nand turn on calendar sync.").font(.system(size: 10)).foregroundStyle(.secondary)
+                Button("Open Internet Accounts") { openSettings("x-apple.systempreferences:com.apple.preferences.internetaccounts") }
             case .selectionRequired:
-                Text("표시할 캘린더를 선택하세요.")
-                Button("캘린더 선택") { model.showingSettings = true }
+                Text("Select calendars to show.")
+                Button("Select Calendars") { model.showingSettings = true }
             case .failed:
-                Text("캘린더를 불러오지 못했습니다.")
-                Button("다시 시도", action: retry)
+                Text("Couldn't load calendars.")
+                Button("Try Again", action: retry)
             default: EmptyView()
             }
         }.font(.system(size: 12)).multilineTextAlignment(.center).frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -192,30 +192,30 @@ import ServiceManagement
         VStack(spacing: 10) {
             HStack {
                 Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
-                TextField("일정 검색", text: $model.searchText).textFieldStyle(.plain).accessibilityLabel("일정 검색")
+                TextField("Search events", text: $model.searchText).textFieldStyle(.plain).accessibilityLabel("Search events")
                 if !model.searchText.isEmpty {
                     Button { model.searchText = "" } label: { Image(systemName: "xmark.circle.fill") }
-                        .buttonStyle(.plain).accessibilityLabel("검색 지우기")
+                        .buttonStyle(.plain).accessibilityLabel("Clear search")
                 }
             }.padding(8).background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 6))
-            Picker("보기", selection: Binding(get: { model.tab }, set: { model.setTab($0) })) {
+            Picker("View", selection: Binding(get: { model.tab }, set: { model.setTab($0) })) {
                 ForEach(CalendarTab.allCases, id: \.self) { Text($0.rawValue).tag($0) }
             }.pickerStyle(.segmented)
         }.padding(.horizontal, 16).padding(.top, 14).padding(.bottom, 8)
     }
     private var searchPage: some View {
         VStack(alignment: .leading, spacing: 10) {
-            DatePicker("시작", selection: $model.searchStart, displayedComponents: .date)
-            DatePicker("종료", selection: $model.searchEnd, displayedComponents: .date)
+            DatePicker("Start", selection: $model.searchStart, displayedComponents: .date)
+            DatePicker("End", selection: $model.searchEnd, displayedComponents: .date)
             if model.searchInterval == nil {
-                Text("종료일은 시작일 이후여야 합니다.").font(.caption).foregroundStyle(.red)
+                Text("End date must be after the start date.").font(.caption).foregroundStyle(.red)
                 Spacer()
             } else {
-                Text("\(model.formatted(model.searchStart, "yyyy.MM.dd")) – \(model.formatted(model.searchEnd, "yyyy.MM.dd")) · \(model.searchState == .loaded ? "\(model.searchResults.count)개" : "조회 중")")
+                Text("\(model.formatted(model.searchStart, "yyyy.MM.dd")) – \(model.formatted(model.searchEnd, "yyyy.MM.dd")) · \(model.searchState == .loaded ? "\(model.searchResults.count) results" : "Searching")")
                     .font(.caption).foregroundStyle(.secondary)
                 Divider()
                 if model.searchState == .loaded {
-                    if model.searchResults.isEmpty { emptyMessage("검색 결과 없음") }
+                    if model.searchResults.isEmpty { emptyMessage("No results") }
                     else {
                         ScrollView {
                             LazyVStack(spacing: 14) {
@@ -234,15 +234,15 @@ import ServiceManagement
     }
     private var upcomingPage: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("\(model.formatted(model.agendaInterval.start, "M월 d일"))부터 \(model.formatted(model.agendaInterval.end.addingTimeInterval(-1), "M월 d일"))까지")
+            Text("\(model.formatted(model.agendaInterval.start, "MMM d")) – \(model.formatted(model.agendaInterval.end.addingTimeInterval(-1), "MMM d"))")
                 .font(.caption).foregroundStyle(.secondary)
             Divider()
             if model.agendaState == .loaded {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 14) {
-                        if model.agendaGroups.isEmpty { Text("예정 일정 없음").foregroundStyle(.secondary) }
+                        if model.agendaGroups.isEmpty { Text("No upcoming events").foregroundStyle(.secondary) }
                         ForEach(model.agendaGroups) { group in
-                            Text(model.formatted(group.day, "M월 d일 EEEE")).font(.system(size: 13, weight: .semibold)).accessibilityAddTraits(.isHeader)
+                            Text(model.formatted(group.day, "EEEE, MMMM d")).font(.system(size: 13, weight: .semibold)).accessibilityAddTraits(.isHeader)
                             ForEach(group.events.map { AgendaDisplayRow(day: group.day, event: $0) }) { row in
                                 let event = row.event
                                 EventDisplayRow(event: event, time: agendaTime(event, day: group.day), highlighted: false,
@@ -251,7 +251,7 @@ import ServiceManagement
                             }
                             Divider()
                         }
-                        Button("30일 더 보기") { model.loadMoreAgenda() }.frame(maxWidth: .infinity)
+                        Button("Show 30 More Days") { model.loadMoreAgenda() }.frame(maxWidth: .infinity)
                     }.padding(.vertical, 5)
                 }
             } else if model.agendaState == .loading { loading }
@@ -261,22 +261,22 @@ import ServiceManagement
     private var loading: some View { ProgressView().controlSize(.small).frame(maxWidth: .infinity, maxHeight: .infinity) }
     private func emptyMessage(_ message: String) -> some View { Text(message).font(.system(size: 13)).foregroundStyle(.secondary).frame(maxWidth: .infinity, maxHeight: .infinity) }
     private func resultTime(_ event: EventOccurrence) -> String {
-        model.formatted(event.start, "M/d") + " " + (event.isAllDay ? "종일" : model.formatted(event.start, "HH:mm"))
+        model.formatted(event.start, "M/d") + " " + (event.isAllDay ? "All day" : model.formatted(event.start, "HH:mm"))
     }
     private func agendaTime(_ event: EventOccurrence, day: Date) -> String {
-        if event.isAllDay { return event.start < day ? "종일 · 진행 중" : "종일" }
-        return event.start < day ? "진행 중" : model.formatted(event.start, "HH:mm")
+        if event.isAllDay { return event.start < day ? "All day · In progress" : "All day" }
+        return event.start < day ? "In progress" : model.formatted(event.start, "HH:mm")
     }
     private var settings: some View {
         ScrollView {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
-                Button { model.showingSettings = false } label: { Label("뒤로", systemImage: "chevron.left") }.buttonStyle(.plain)
+                Button { model.showingSettings = false } label: { Label("Back", systemImage: "chevron.left") }.buttonStyle(.plain)
                 Spacer()
-                Text("설정").font(.headline)
+                Text("Settings").font(.headline)
             }
             Divider()
-            Text("표시할 캘린더").font(.system(size: 12, weight: .semibold))
+            Text("Calendars to Show").font(.system(size: 12, weight: .semibold))
             if model.access.calendars.isEmpty { accessMessage.frame(height: 150) }
             else {
                 Group {
@@ -303,19 +303,19 @@ import ServiceManagement
             }
             Divider()
             if let reminders = model.reminders { ReminderSettingsView(reminders: reminders); Divider() }
-            Toggle("로그인 시 실행", isOn: loginToggleBinding).toggleStyle(.switch).font(.system(size: 12))
+            Toggle("Launch at Login", isOn: loginToggleBinding).toggleStyle(.switch).font(.system(size: 12))
             if login.state == .requiresApproval {
-                Text("시스템 설정에서 로그인 항목을 승인해 주세요.").font(.caption).foregroundStyle(.secondary)
-                Button("로그인 항목 설정") { SMAppService.openSystemSettingsLoginItems() }
-                Button("등록 취소", action: cancelPendingLoginRegistration)
+                Text("Approve the login item in System Settings.").font(.caption).foregroundStyle(.secondary)
+                Button("Login Items Settings") { SMAppService.openSystemSettingsLoginItems() }
+                Button("Cancel Registration", action: cancelPendingLoginRegistration)
             }
             if case .failure(let message) = login.state {
                 Text(message).font(.caption).foregroundStyle(.secondary)
-                Button("다시 확인") { login.refresh() }
+                Button("Check Again") { login.refresh() }
             }
             Spacer(minLength: 0)
             Divider()
-            Button("Calendar Bar 종료") { NSApplication.shared.terminate(nil) }.buttonStyle(.plain).font(.system(size: 12)).foregroundStyle(.secondary)
+            Button("Quit Calendar Bar") { NSApplication.shared.terminate(nil) }.buttonStyle(.plain).font(.system(size: 12)).foregroundStyle(.secondary)
         }.padding(20)
         }
     }
@@ -352,8 +352,8 @@ struct AgendaDisplayRow: Identifiable {
                 Image(systemName: delivery?.scheduled ?? 0 > 0 ? "bell.fill" : delivery?.desiredEnabled == true ? "bell.badge" : "bell")
                     .foregroundStyle(delivery?.scheduled ?? 0 > 0 ? Color.accentColor : .secondary)
             }
-                .buttonStyle(.plain).accessibilityLabel("알림 설정: " + event.title + ", " + (delivery?.state.label ?? "알림 꺼짐"))
-                .help(delivery.map { "\($0.state.label) · 실제 예약 \($0.scheduled)개 · 보류 \($0.deferred)개" } ?? "알림 꺼짐")
+                .buttonStyle(.plain).accessibilityLabel("Reminder settings: " + event.title + ", " + (delivery?.state.label ?? "Reminders off"))
+                .help(delivery.map { "\($0.state.label) · \($0.scheduled) scheduled · \($0.deferred) deferred" } ?? "Reminders off")
         }.padding(4).background(highlighted ? Color.accentColor.opacity(0.12) : .clear, in: RoundedRectangle(cornerRadius: 4))
     }
     private var content: some View {

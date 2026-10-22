@@ -44,7 +44,7 @@ final class LoginItemControllerTests: XCTestCase {
 
     func testFirstLaunchRegistersWhenSystemReportsNotFound() async {
         let backend = Backend(), store = Store()
-        backend.state = .failure("로그인 항목을 찾을 수 없습니다.")
+        backend.state = .failure("Login item not found.")
         let controller = LoginItemController(backend: backend, store: store)
         controller.initializeForLaunch()
         XCTAssertEqual(backend.registrations, 1)

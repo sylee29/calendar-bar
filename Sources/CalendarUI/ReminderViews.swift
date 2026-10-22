@@ -6,13 +6,13 @@ import CalendarNotifications
 extension ReminderDeliveryState {
     var label: String {
         switch self {
-        case .updating: return "예약 확인 중"
-        case .scheduled: return "예약됨"
-        case .partial: return "일부 예약 · 나머지 확인 필요"
-        case .permissionRequired: return "알림 또는 캘린더 권한 필요"
-        case .failed: return "예약 실패 · 다시 시도해 주세요"
-        case .needsConfirmation: return "일정 변경 확인 필요"
-        case .noFuture: return "예약된 미래 알림 없음"
+        case .updating: return "Checking schedule"
+        case .scheduled: return "Scheduled"
+        case .partial: return "Partly scheduled · rest needs checking"
+        case .permissionRequired: return "Notification or calendar permission needed"
+        case .failed: return "Scheduling failed · please try again"
+        case .needsConfirmation: return "Event change needs confirmation"
+        case .noFuture: return "No future reminders scheduled"
         }
     }
 }
@@ -20,9 +20,9 @@ extension ReminderDeliveryState {
     let snapshot: ReminderDeliverySnapshot
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(snapshot.desiredEnabled ? "알림 사용 설정" : "알림 꺼짐").font(.caption)
+            Text(snapshot.desiredEnabled ? "Reminders on" : "Reminders off").font(.caption)
             Text(snapshot.state.label).font(.caption).foregroundStyle(.secondary)
-            Text("실제 예약 \(snapshot.scheduled)개 · 보류 \(snapshot.deferred)개").font(.caption).foregroundStyle(.secondary)
+            Text("\(snapshot.scheduled) scheduled · \(snapshot.deferred) deferred").font(.caption).foregroundStyle(.secondary)
         }.accessibilityElement(children: .combine)
     }
 }
@@ -33,42 +33,42 @@ extension ReminderDeliveryState {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 HStack {
-                    Button("닫기") { model.cancelReminder() }
+                    Button("Close") { model.cancelReminder() }
                     Spacer()
-                    Text("일정 알림").font(.headline)
+                    Text("Event Reminder").font(.headline)
                 }
                 if let event = model.selectedReminderEvent, let draft = model.reminderDraft, model.canDisplayReminder {
                     Text(event.title).font(.headline)
-                    Text(model.formatted(event.start, event.isAllDay ? "M월 d일 · 종일" : "M월 d일 HH:mm")).font(.caption).foregroundStyle(.secondary)
+                    Text(model.formatted(event.start, event.isAllDay ? "MMM d · 'All day'" : "MMM d HH:mm")).font(.caption).foregroundStyle(.secondary)
                     ReminderStatusView(snapshot: reminders.snapshot(for: event))
                     Divider()
                     if event.isRecurring {
-                        Picker("적용 범위", selection: Binding(get: { model.reminderDraft?.scope ?? .thisOccurrence }, set: { model.reminderDraft?.scope = $0 })) {
-                            Text("이번 일정만").tag(ReminderScope.thisOccurrence)
-                            Text("이 일정부터 앞으로").tag(ReminderScope.thisAndFuture).disabled(!draft.canUseFuture)
+                        Picker("Apply to", selection: Binding(get: { model.reminderDraft?.scope ?? .thisOccurrence }, set: { model.reminderDraft?.scope = $0 })) {
+                            Text("This event only").tag(ReminderScope.thisOccurrence)
+                            Text("This and future events").tag(ReminderScope.thisAndFuture).disabled(!draft.canUseFuture)
                         }
-                        if !draft.canUseFuture { Text("반복 일정의 연결을 확인하지 못해 앞으로 적용할 수 없습니다.").font(.caption).foregroundStyle(.secondary) }
-                        if draft.occurrenceAnchor == nil { Text("원래 발생 시점을 확인할 수 없습니다. 캘린더를 새로고침한 뒤 다시 시도해 주세요.").font(.caption).foregroundStyle(.red) }
+                        if !draft.canUseFuture { Text("Can't apply to future events because the recurring series couldn't be confirmed.").font(.caption).foregroundStyle(.secondary) }
+                        if draft.occurrenceAnchor == nil { Text("Can't determine the original occurrence. Refresh the calendar and try again.").font(.caption).foregroundStyle(.red) }
                     }
                     if draft.requiresFormatConfirmation {
-                        Text("일정이 시간 일정 또는 종일 일정으로 변경되었습니다. 새 형식의 시간을 확인해 주세요.").font(.caption)
-                        Toggle("변경된 일정 형식 확인", isOn: Binding(get: { model.reminderDraft?.formatConfirmed ?? false }, set: { model.reminderDraft?.formatConfirmed = $0 }))
+                        Text("The event changed between timed and all-day. Review the times for the new format.").font(.caption)
+                        Toggle("Confirm changed event format", isOn: Binding(get: { model.reminderDraft?.formatConfirmed ?? false }, set: { model.reminderDraft?.formatConfirmed = $0 }))
                     }
                     TriggerFields(rows: Binding(get: { model.reminderDraft?.rows ?? [] }, set: { model.reminderDraft?.rows = $0 }), format: draft.format)
-                    Button("기본 시간 적용") { model.reminderDraft?.apply(reminders.settings.defaults) }
-                    Text("기본 시간을 복사합니다. 이후 기본값을 바꿔도 이 일정에는 소급 적용되지 않습니다.").font(.caption).foregroundStyle(.secondary)
+                    Button("Apply Default Times") { model.reminderDraft?.apply(reminders.settings.defaults) }
+                    Text("Copies the default times. Later changes to the defaults won't apply to this event.").font(.caption).foregroundStyle(.secondary)
                     if let error = model.reminderError { Text(error).font(.caption).foregroundStyle(.red) }
                     HStack {
-                        Button("알림 끄기") { Task { await model.saveReminder(enabled: false) } }
+                        Button("Turn Off Reminder") { Task { await model.saveReminder(enabled: false) } }
                         Spacer()
-                        Button("저장") { Task { await model.saveReminder(enabled: true) } }.buttonStyle(.borderedProminent)
+                        Button("Save") { Task { await model.saveReminder(enabled: true) } }.buttonStyle(.borderedProminent)
                     }.disabled(model.reminderBusy || draft.occurrenceAnchor == nil)
                     if event.isRecurring, let existing = draft.existing, existing.scope == .thisOccurrence {
-                        Button("개별 설정 해제 · 반복 설정 따르기") { Task { await model.resumeInheritedReminder() } }.disabled(model.reminderBusy)
+                        Button("Clear Override · Follow Series") { Task { await model.resumeInheritedReminder() } }.disabled(model.reminderBusy)
                     }
                     ReminderPermissionView(reminders: reminders)
-                    Button("예약 다시 확인") { Task { await reminders.retry() } }
-                    Text("일정 자체는 변경하지 않습니다.").font(.caption).foregroundStyle(.secondary)
+                    Button("Recheck Schedule") { Task { await reminders.retry() } }
+                    Text("The event itself is never changed.").font(.caption).foregroundStyle(.secondary)
                 }
             }.padding(20)
         }
@@ -82,23 +82,23 @@ extension ReminderDeliveryState {
             ForEach($rows) { $row in
                 HStack(spacing: 5) {
                     if format == .timed {
-                        TextField("0", text: $row.hours).accessibilityLabel("알림 몇 시간 전").frame(width: 48)
-                        Text("시간")
-                        TextField("10", text: $row.minute).accessibilityLabel("알림 몇 분 전").frame(width: 42)
-                        Text("분 전")
+                        TextField("0", text: $row.hours).accessibilityLabel("Reminder hours before").frame(width: 48)
+                        Text("h")
+                        TextField("10", text: $row.minute).accessibilityLabel("Reminder minutes before").frame(width: 42)
+                        Text("min before")
                     } else {
-                        TextField("1", text: $row.days).accessibilityLabel("알림 며칠 전").frame(width: 38)
-                        Text("일 전")
-                        TextField("21", text: $row.wallHour).accessibilityLabel("알림 시 0에서 23").frame(width: 32)
+                        TextField("1", text: $row.days).accessibilityLabel("Reminder days before").frame(width: 38)
+                        Text("days before at")
+                        TextField("21", text: $row.wallHour).accessibilityLabel("Reminder hour 0 to 23").frame(width: 32)
                         Text(":")
-                        TextField("00", text: $row.minute).accessibilityLabel("알림 분 0에서 59").frame(width: 32)
+                        TextField("00", text: $row.minute).accessibilityLabel("Reminder minute 0 to 59").frame(width: 32)
                     }
                     Spacer(minLength: 0)
-                    Button { rows.removeAll { $0.id == row.id } } label: { Image(systemName: "minus.circle") }.buttonStyle(.plain).accessibilityLabel("이 알림 시간 삭제")
+                    Button { rows.removeAll { $0.id == row.id } } label: { Image(systemName: "minus.circle") }.buttonStyle(.plain).accessibilityLabel("Delete this reminder time")
                 }.textFieldStyle(.roundedBorder).font(.system(size: 12))
             }
-            Button("알림 시간 추가") { rows.append(ReminderTriggerDraft(format == .timed ? try! .timed(hours: 0, minutes: 10) : try! .allDay(daysBefore: 1, hour: 21, minute: 0))) }
-            Text(format == .timed ? "최소 1분 전 · 분은 0–59" : "0일 전은 당일 · 시 0–23, 분 0–59 · 현재 시간대 기준").font(.caption).foregroundStyle(.secondary)
+            Button("Add Reminder Time") { rows.append(ReminderTriggerDraft(format == .timed ? try! .timed(hours: 0, minutes: 10) : try! .allDay(daysBefore: 1, hour: 21, minute: 0))) }
+            Text(format == .timed ? "At least 1 min before · minutes 0–59" : "0 days before = same day · hour 0–23, minute 0–59 · current time zone").font(.caption).foregroundStyle(.secondary)
         }
     }
 }
@@ -107,9 +107,9 @@ extension ReminderDeliveryState {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             if !reminders.permission.canSchedule {
-                Text("알림이 허용되어야 실제로 예약할 수 있습니다.").font(.caption)
-                Button("알림 권한 요청") { Task { await reminders.requestPermission() } }
-                Button("알림 시스템 설정") {
+                Text("Notifications must be allowed before reminders can be scheduled.").font(.caption)
+                Button("Request Notification Permission") { Task { await reminders.requestPermission() } }
+                Button("Notification Settings") {
                     if let url = URL(string: "x-apple.systempreferences:com.apple.Notifications-Settings.extension") { NSWorkspace.shared.open(url) }
                 }
             }
@@ -126,30 +126,30 @@ extension ReminderDeliveryState {
     @State private var saved = false
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("알림").font(.headline)
-            Text("실제 예약 \(reminders.scheduled)개 · 보류 \(reminders.deferred)개 · 확인 필요 \(reminders.needsConfirmation)개").font(.caption)
-            if let date = reminders.lastScheduled { Text("최근 예약 확인: \(date.formatted(date: .abbreviated, time: .shortened))").font(.caption).foregroundStyle(.secondary) }
-            else { Text("아직 예약된 알림이 없습니다.").font(.caption).foregroundStyle(.secondary) }
-            Button("예약 다시 확인") { Task { await reminders.retry() } }
+            Text("Reminders").font(.headline)
+            Text("\(reminders.scheduled) scheduled · \(reminders.deferred) deferred · \(reminders.needsConfirmation) need confirmation").font(.caption)
+            if let date = reminders.lastScheduled { Text("Last checked: \(date.formatted(date: .abbreviated, time: .shortened))").font(.caption).foregroundStyle(.secondary) }
+            else { Text("No reminders scheduled yet.").font(.caption).foregroundStyle(.secondary) }
+            Button("Recheck Schedule") { Task { await reminders.retry() } }
             ReminderPermissionView(reminders: reminders)
-            Toggle("알림 제목과 시간 숨기기", isOn: Binding(get: { reminders.settings.hideContent }, set: { value in
-                Task { do { try await reminders.setHideContent(value); error = nil } catch { self.error = "알림 내용 설정을 저장하지 못했습니다." } }
+            Toggle("Hide Reminder Title and Time", isOn: Binding(get: { reminders.settings.hideContent }, set: { value in
+                Task { do { try await reminders.setHideContent(value); error = nil } catch { self.error = "Couldn't save the reminder content setting." } }
             })).toggleStyle(.checkbox)
-            Text("시간 일정 기본값").font(.subheadline)
+            Text("Timed Event Defaults").font(.subheadline)
             TriggerFields(rows: $timed, format: .timed)
-            Text("종일 일정 기본값").font(.subheadline)
+            Text("All-Day Event Defaults").font(.subheadline)
             TriggerFields(rows: $allDay, format: .allDay)
-            Button("기본 시간 저장") {
+            Button("Save Default Times") {
                 Task {
                     do {
                         try await reminders.updateDefaults(ReminderDefaults(timed: timed.map { try $0.trigger(format: .timed) }, allDay: allDay.map { try $0.trigger(format: .allDay) }))
                         error = nil; saved = true
-                    } catch { self.error = "기본 시간을 저장하지 못했습니다. 각 형식에 유효한 시간을 하나 이상 입력해 주세요."; saved = false }
+                    } catch { self.error = "Couldn't save default times. Enter at least one valid time for each format."; saved = false }
                 }
             }
-            if saved { Text("기본 시간 저장됨 · 기존 일정은 그대로 유지됩니다.").font(.caption).foregroundStyle(.secondary) }
+            if saved { Text("Default times saved · existing events are unchanged.").font(.caption).foregroundStyle(.secondary) }
             if let error { Text(error).font(.caption).foregroundStyle(.red) }
-            Text("일정마다 알림을 직접 켜야 합니다. 앞으로 1년 범위에서 가까운 알림 최대 48개를 예약하며 나머지는 앱 실행 중 보충합니다. 오래 닫아 두었다면 앱을 다시 열어 주세요. 앱 종료 중 변경·삭제·권한 회수는 반영되지 않아 이전 제목의 알림이 남을 수 있습니다.").font(.caption).foregroundStyle(.secondary)
+            Text("Turn on reminders for each event yourself. Up to 48 of the nearest reminders within the next year are scheduled; the rest are filled in while the app runs. If the app has been closed for a long time, open it again. Changes, deletions, and permission revocations made while the app is quit aren't reflected, so a reminder with an old title may remain.").font(.caption).foregroundStyle(.secondary)
         }
         .onAppear {
             timed = reminders.settings.defaults.timed.map(ReminderTriggerDraft.init)

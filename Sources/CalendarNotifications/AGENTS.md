@@ -1,15 +1,15 @@
 # CalendarNotifications
 
-로컬 알림 설정과 시스템 알림 예약·취소·복구를 담당한다.
+Owns local reminder settings and scheduling, cancelling, and recovering system notifications.
 
-일정 원본을 수정하지 않는다. CalendarCore 값과 CalendarAccess의 읽기 결과만 사용한다. 제목·계정 정보를 자체 설정이나 로그에 저장하지 않는다.
+Never modify source events. Use only CalendarCore values and CalendarAccess read results. Do not store titles or account information in its own settings or logs.
 
-설정 의도와 실제 예약 상태를 구별한다. 권한 회수·선택 해제 확인 시 관련 알림을 제거하며 정상 앱 종료에는 예약을 유지한다. 오래된 비동기 작업이 취소한 알림을 되살리지 못하게 한다.
+Distinguish configured intent from actual scheduled state. Remove related reminders when permission revocation or deselection is confirmed, and keep scheduled reminders on normal app quit. Don't let stale async work revive cancelled reminders.
 
-주입한 시계·저장소·예약 backend로 반복 예외, 복수 알림, 실패 복구와 동시 변경을 검증한다. 단위 테스트는 실제 사용자 알림을 보내거나 삭제하지 않는다.
+Verify recurring exceptions, multiple reminders, failure recovery, and concurrent changes with an injected clock, store, and scheduling backend. Unit tests never send or delete real user notifications.
 
-조회 실패만으로 삭제를 추정하지 않는다. 끄기·숨기기·권한 상실·손상된 설정의 정리는 조회 실패와 독립적으로 실행한다. 현재 발생분을 확인할 수 없을 때 시리즈 전체를 취소하지 않고 위험한 발생분만 격리한다. 대기 요청과 전달 요청 모두 재확인하고 실제 예약 수를 OS 응답과 대조한다. 정상 종료 중 외부 변경은 감지하지 못하며 다음 실행에서 정리한다.
+Don't infer deletion from a query failure alone. Cleanup for turn-off, hiding, permission loss, and corrupted settings runs independently of query failures. When the current occurrence can't be confirmed, don't cancel the whole series; quarantine only the risky occurrences. Recheck both pending and delivered requests, and reconcile the actual scheduled count against the OS response. External changes during a normal quit aren't detected; clean them up on the next launch.
 
-반복 예외·멀리 이동한 발생분·개별 형식 변경·설정 저장 실패·예약 추가 실패·숨기기 도중 변경·오래된 응답·타이머 재설정과 해제를 주입 backend로 검증한다. OS 검증은 별도 QA 번들만 사용한다.
+Verify recurring exceptions, occurrences moved far away, per-event form changes, settings save failures, schedule add failures, changes while hiding, stale responses, and timer reset and teardown with an injected backend. OS verification uses only the separate QA bundle.
 
-반복 예약과 상태 대조는 저장 규칙과 같은 종류의 원래 발생 근거를 사용한다. 모호한 civil 근거를 안전한 예약으로 인정하지 않으며 조회용 대체 근거는 저장 설정에 추가하지 않는다. 기존 version 1 설정의 식별 연결을 유지한다.
+Recurring scheduling and state reconciliation use the same kind of original occurrence basis as the storage rules. An ambiguous civil basis is never accepted as a safe schedule, and fallback bases used for lookup are not added to stored settings. Keep the identity links of existing version 1 settings.

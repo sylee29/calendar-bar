@@ -38,11 +38,11 @@ final class CalendarModelTests: XCTestCase {
         XCTAssertEqual(access.state, .loaded)
         let color = RGBAColor(red: 0, green: 0, blue: 1)
         let event = EventOccurrence(calendarID: "c", calendarName: "", color: color, eventID: "e", title: "", start: date("2026-12-02"), end: date("2026-12-04"), isAllDay: false)
-        XCTAssertEqual(model.timeLabel(event), "진행 중")
+        XCTAssertEqual(model.timeLabel(event), "In progress")
         let allDay = EventOccurrence(calendarID: "c", calendarName: "", color: color, eventID: "a", title: "", start: date("2026-12-02"), end: date("2026-12-04"), isAllDay: true)
-        XCTAssertEqual(model.timeLabel(allDay), "종일 · 진행 중")
+        XCTAssertEqual(model.timeLabel(allDay), "All day · In progress")
         model.select(date("2026-12-02"))
-        XCTAssertEqual(model.timeLabel(allDay), "종일")
+        XCTAssertEqual(model.timeLabel(allDay), "All day")
         await model.waitForRefresh()
     }
     @MainActor func testPendingLoginRegistrationCanBeCancelledAndStaysOffOnNextLaunch() async {

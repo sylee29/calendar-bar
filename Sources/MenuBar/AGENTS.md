@@ -1,9 +1,9 @@
 # MenuBar
 
-메뉴막대 아이콘·팝오버·로그인 항목을 담당한다.
+Owns the menu bar icon, popover, and login item.
 
-팝오버 수명과 앱 수명을 구별한다. 자동 등록 최초 시도 기록과 시스템 실제 상태를 구별한다. 내용은 주입받아 유지한다.
+Distinguish the popover lifecycle from the app lifecycle. Distinguish the record of the first automatic registration attempt from the system's actual state. Content is injected and retained.
 
-캘린더 조회·일정 목록·날짜 탐색 모델은 소유하지 않는다.
+Does not own calendar queries, event lists, or the date navigation model.
 
-주입한 로그인 backend와 저장소로 테스트한다. 정상 시스템 설정을 단위 테스트에서 바꾸지 않는다. 외부 클릭과 Escape는 실제 화면으로 확인한다.
+Test with an injected login backend and store. Unit tests never change real system settings. Check outside clicks and Escape on the real screen.

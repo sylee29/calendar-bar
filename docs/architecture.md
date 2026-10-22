@@ -1,9 +1,9 @@
-# 구성과 흐름
+# Structure and Flow
 
-CalendarBar 진입점이 앱 수명과 CalendarUI의 조정자를 연결한다. CalendarUI는 CalendarCore의 날짜·일정 값을 화면으로 만들고 CalendarAccess에 달력·검색·예정 일정 범위의 읽기를 각각 요청한다. CalendarNotifications는 Core의 알림 규칙과 Access의 현재 일정 확인을 받아 UserNotifications에 앱 소유 알림을 예약한다. UI는 이 조정자의 설정 의도와 실제 예약 결과를 표시한다. MenuBar는 내용 화면을 받아 AppKit 메뉴막대 팝오버에 담으며 화면 데이터에는 의존하지 않는다.
+The CalendarBar entry point wires the app lifecycle to the CalendarUI coordinator. CalendarUI turns CalendarCore date and event values into views and sends separate read requests to CalendarAccess for the calendar, search, and Upcoming ranges. CalendarNotifications takes reminder rules from Core and current-event checks from Access and schedules app-owned reminders in UserNotifications. The UI shows this coordinator's configured intent and the actual scheduling result. MenuBar receives the content view and hosts it in an AppKit menu bar popover; it does not depend on view data.
 
-CalendarAccess는 EventKit 객체를 actor 안에 두고 불변 값만 UI로 전달한다. 사용자 선택 ID는 UserDefaults로 이어지고 일정 원문을 앱 자체 파일에 캐시하지 않는다. 사용자가 켠 알림의 표시 내용은 OS 예약 저장소에 전달한다. 로그인 실행은 MenuBar에서 ServiceManagement에 연결한다. 구글 동기화는 macOS 계정 서비스가 담당하며 앱과 구글 서버 사이의 통신 경로는 없다.
+CalendarAccess keeps EventKit objects inside an actor and passes only immutable values to the UI. User-selected IDs persist through UserDefaults, and raw event content is not cached in the app's own files. Display content of reminders the user turned on is handed to the OS scheduling store. Launch at login is wired from MenuBar to ServiceManagement. Google sync is handled by the macOS account service; there is no communication path between the app and Google servers.
 
-아이콘 클릭 → 오늘 선택으로 초기화 → 표시 격자 기간 조회 → 권한/선택 확인 → 선택한 캘린더 발생분 읽기 → 최신 요청인지 확인 → 날짜별 점과 선택일 목록 표시 순서다. 앱의 조회는 시스템 저장소까지이며 구글 서버의 최신성은 이 경계 밖이다.
+Flow: icon click → reset selection to today → query the displayed grid range → check permission/selection → read occurrences from selected calendars → confirm it is the latest request → show per-date dots and the selected date's list. The app reads only as far as the system store; freshness of Google's servers is outside this boundary.
 
-검색과 예정 일정은 달력과 독립된 조회 채널을 사용한다. 알림 설정 저장 → 현재 권한·선택·발생분 재확인 → 가까운 요청부터 시스템 예약 → 시스템 대기 요청 재조회 → 실제 예약·보류 상태 표시 순서다. 알림 클릭은 저장된 식별 연결을 현재 일정과 다시 대조한 뒤 해당 발생분의 시작일로 이동한다. 정상 종료 시 예약은 OS에 남고, 별도 상주 도우미나 서버는 없다.
+Search and Upcoming use query channels independent of the calendar. Reminder flow: save reminder settings → recheck current permission, selection, and occurrences → schedule with the system, nearest requests first → re-query system pending requests → show scheduled/deferred status. A reminder click re-matches the stored identity link against current events, then navigates to that occurrence's start date. On normal quit, scheduled reminders remain in the OS; there is no separate resident helper or server.

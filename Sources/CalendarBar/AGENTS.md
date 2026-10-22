@@ -1,13 +1,13 @@
 # CalendarBar
 
-앱 진입과 delegate 수명 연결을 담당한다.
+Owns app entry and delegate lifecycle wiring.
 
-시작은 main actor에서 하고 실행 중 delegate와 coordinator를 보관한다. 팝오버 닫힘으로 종료하지 않는다.
+Start on the main actor and retain the delegate and coordinator while running. Do not quit when the popover closes.
 
-날짜 계산·EventKit 조회·화면 레이아웃은 이 모듈의 범위가 아니다.
+Date calculation, EventKit queries, and screen layout are outside this module's scope.
 
-정상 번들 실행과 --smoke --show를 구분한다. 진입점 변경 후 실제 실행 콜백과 메뉴막대를 확인한다.
+Distinguish a normal bundle launch from --smoke --show. After entry point changes, confirm the actual launch callbacks and the menu bar.
 
-알림 delegate를 앱 실행 전에 연결하고 콜드 실행 응답을 UI 준비 뒤 전달한다. 알림 토큰은 현재 일정 재확인을 거쳐서만 탐색한다. `.qa` 식별자의 인자 없는 실행도 합성 데이터·독립 저장·로그인 미등록을 유지해야 한다.
+Connect the notification delegate before the app runs, and deliver a cold-launch response after the UI is ready. Navigate from a notification token only after rechecking the current event. A no-argument launch of the `.qa` identifier must still keep synthetic data, isolated storage, and no login registration.
 
-`--qa-notification-report`는 `.qa`에서만 읽기 전용으로 실행하고 delegate·설정 생성·예약 재조정보다 먼저 분기한다. OS 권한·자체 요청 식별자·시각만 출력하며 개인 제목·본문·userInfo를 읽거나 출력하지 않는다. 일반 앱에 진단 인자가 들어오면 실제 앱을 시작하지 않고 거절한다.
+`--qa-notification-report` runs read-only and only in `.qa`, branching before delegate setup, settings creation, and schedule reconciliation. It prints only OS permissions, its own request identifiers, and times, and never reads or prints personal titles, bodies, or userInfo. If the regular app receives a diagnostic argument, it refuses without starting the real app.

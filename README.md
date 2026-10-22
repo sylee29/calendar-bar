@@ -1,24 +1,24 @@
 # Calendar Bar
 
-**메뉴막대에서 일정을 찾고, 모아 보고, 미리 알림을 받는 작은 macOS 캘린더.**
-아이콘을 누르면 월간 달력이 펼쳐지고, 바깥을 클릭하면 닫힙니다. 별도 메인 창이나 Dock 아이콘 없이 사용합니다.
+**A small macOS calendar in the menu bar for finding events, viewing them together, and getting reminders.**
+Click the icon to open a monthly calendar; click outside to close it. No main window or Dock icon.
 
-## 주요 기능
+## Features
 
-- 오늘 날짜 강조와 일정이 있는 날의 색 점 표시
-- 날짜를 선택하면 일정 제목·시간·종일 여부 표시
-- 좌우 드래그 또는 화살표로 월 이동
-- 일정 제목 검색과 검색 결과의 날짜로 바로 이동
-- **예정 일정** 탭에서 다가오는 일정을 날짜별로 모아보기
-- 직접 고른 일정에 여러 미리알림 설정, 기본 알림 시간 변경
-- 반복 일정의 이번 일정만·앞으로 적용, 종일 일정 알림 지원
-- 앱 종료 후에도 이미 예약한 알림 전달, 알림 클릭으로 해당 일정 열기
-- 표시할 캘린더 선택과 로그인 시 자동 실행
+- Today highlighted, with colored dots on days that have events
+- Select a date to see event titles, times, and whether they are all-day
+- Change months by dragging left/right or with the arrows
+- Search event titles and jump straight to a result's date
+- View upcoming events grouped by date in the **Upcoming** tab
+- Set multiple reminders on events you choose, and change the default reminder times
+- "This event only" and "This and future events" scopes for recurring events, plus reminders for all-day events
+- Already-scheduled reminders are delivered even after the app quits; clicking a reminder opens that event
+- Choose which calendars to show, and launch at login
 
-## 설치 및 실행
+## Install and run
 
-macOS 14 이상, Swift 6 도구 모음(Xcode 또는 Command Line Tools), Python 3가 필요합니다.
-실제 실행은 macOS 26.3.1 Apple Silicon에서 확인했으며, macOS 14 실기 검증은 하지 않았습니다.
+Requires macOS 14 or later, the Swift 6 toolchain (Xcode or Command Line Tools), and Python 3.
+Actual runs were verified on macOS 26.3.1 on Apple Silicon; macOS 14 has not been verified on real hardware.
 
 ```sh
 git clone https://github.com/seungyoon-lee29/calendar-bar.git
@@ -27,91 +27,91 @@ python3 scripts/verify.py
 open build/CalendarBar.app
 ```
 
-검증 명령은 테스트와 앱 빌드를 함께 실행합니다. 생성된 `build/CalendarBar.app`을 응용 프로그램 폴더로 옮긴 다음 그 위치에서 실행하면 됩니다. 로그인 자동 실행을 사용할 때는 앱 위치를 유지해 주세요.
+The verify command runs the tests and builds the app together. Move the generated `build/CalendarBar.app` to the Applications folder and run it from there. If you use launch at login, keep the app in that location.
 
-> 로컬 서명으로 빌드하는 앱이며, 공증된 배포 설치 파일은 제공하지 않습니다. 재빌드 후에는 캘린더 접근 권한을 다시 요청할 수 있습니다.
+> The app is built with local signing; no notarized installer is provided. After a rebuild, the app may ask for calendar access again.
 
-### Claude Code로 설치하기
+### Installing with Claude Code
 
-명령어가 번거로우면 clone한 폴더에서 Claude Code를 열고 이렇게 요청하면 됩니다.
+If the commands are a hassle, open Claude Code in the cloned folder and ask:
 
 ```text
-이 앱 빌드해서 실행해줘. 응용 프로그램 폴더로 옮기기 전에는 물어봐.
+Build and run this app. Ask me before moving it to the Applications folder.
 ```
 
-캘린더·알림 권한 창은 직접 허용해야 합니다.
+You need to approve the calendar and notification permission prompts yourself.
 
-## 처음 연결하기
+## First-time setup
 
-> **팁:** 맥 기본 캘린더 앱에 구글 캘린더 같은 계정을 연동해 두면, 이 앱에서 따로 로그인하지 않아도 메뉴막대에서 바로 일정을 볼 수 있습니다. 구글 외에 iCloud, Exchange, CalDAV 계정도 기본 캘린더에 보이면 함께 선택할 수 있습니다.
+> **Tip:** If you connect an account such as Google Calendar to the built-in Mac Calendar app, you can see events right from the menu bar without signing in to this app separately. Besides Google, iCloud, Exchange, and CalDAV accounts can also be selected if they appear in the built-in Calendar.
 
-1. **시스템 설정 → 인터넷 계정**에서 Google 계정을 연결하고 **캘린더** 동기화를 켭니다. 이미 기본 캘린더 앱에서 구글 일정이 보이면 이 단계는 생략합니다.
-2. 메뉴막대의 날짜 아이콘을 누르고 **캘린더 연결**을 선택합니다.
-3. macOS 권한 창에서 접근을 허용합니다. 시스템은 **전체 접근**을 요청하지만, 이 앱은 일정을 읽기만 합니다.
-4. 톱니바퀴 **설정**에서 표시할 캘린더를 선택합니다. 필요 없는 공휴일 캘린더 등은 선택하지 않으면 됩니다.
+1. In **System Settings → Internet Accounts**, connect your Google account and turn on **Calendars** sync. Skip this step if your Google events already appear in the built-in Calendar app.
+2. Click the date icon in the menu bar and choose **Connect Calendar**.
+3. Allow access in the macOS permission prompt. The system requests **Full Access**, but this app only reads events.
+4. In the gear **Settings**, choose the calendars to show. Simply leave out calendars you don't need, such as holiday calendars.
 
-## 사용 방법
+## Usage
 
-| 동작 | 사용법 |
+| Action | How |
 |---|---|
-| 열기·닫기 | 메뉴막대 아이콘 클릭. 바깥 클릭 또는 `Esc`로 닫기 |
-| 날짜 확인 | 파란 원은 오늘, 날짜 아래 색 점은 일정이 있다는 표시 |
-| 일정 보기 | 날짜를 클릭하면 아래에 해당 날짜의 일정 표시 |
-| 월 이동 | 손 움직임을 따라 부드럽게 전환. 왼쪽은 다음 달, 오른쪽은 이전 달. 짧게 움직이면 원위치로 복귀 |
-| 오늘로 돌아가기 | **오늘** 버튼 클릭. 메뉴막대 아이콘으로 다시 열면 오늘로 초기화하고 검색을 지움. 알림 클릭은 해당 일정 날짜로 이동 |
-| 일정 검색 | 상단 검색창에 제목의 일부 입력. 결과 본문을 누르면 해당 날짜로 이동하고 일정 강조 |
-| 모아보기 | **예정 일정** 탭에서 날짜별 확인. **더 보기**로 다음 기간 추가 |
-| 미리알림 | 일정 옆 종 버튼에서 알림 시간과 적용 범위를 정한 뒤 **저장** |
-| 자동 실행 | 설정의 **로그인 시 실행** 켜기·끄기. 시스템 승인이 필요하면 안내에 따라 허용 |
-| 종료 | 설정의 **Calendar Bar 종료** 선택 |
+| Open/close | Click the menu bar icon. Close by clicking outside or pressing `Esc` |
+| Read dates | The blue circle is today; a colored dot under a date means it has events |
+| View events | Click a date to show its events below |
+| Change month | Transitions smoothly following your hand. Left is next month, right is previous month. A short movement snaps back |
+| Back to today | Click the **Today** button. Reopening from the menu bar icon resets to today and clears the search. Clicking a reminder goes to that event's date |
+| Search events | Type part of a title in the search field at the top. Clicking a result's body jumps to its date and highlights the event |
+| Overview | Check events by date in the **Upcoming** tab. **Show 30 More Days** adds the next period |
+| Reminders | Use the bell button next to an event to set reminder times and scope, then **Save** |
+| Launch at login | Toggle **Launch at Login** in Settings. If system approval is needed, follow the prompt to allow it |
+| Quit | Choose **Quit Calendar Bar** in Settings |
 
-월을 넘기면 선택한 일자를 유지합니다. 해당 날짜가 없는 달은 마지막 날로 이동합니다. 예를 들어 1월 31일에서 다음 달로 이동하면 2월 말일을 선택합니다.
+When you change months, the selected day of the month is kept. If that day doesn't exist in the month, the last day is selected. For example, moving forward from January 31 selects the last day of February.
 
-### 검색과 예정 일정
+### Search and Upcoming
 
-검색은 **선택한 캘린더의 일정 제목**에만 적용합니다. 기본 검색 기간은 오늘 기준 앞뒤 1년이며 시작일과 종료일을 바꿀 수 있습니다. 대소문자를 구분하지 않는 부분 일치 검색으로, 메모·장소·초성 검색은 지원하지 않습니다. 검색 결과의 종 버튼은 날짜 이동 없이 알림 설정을 엽니다.
+Search applies only to **event titles in the selected calendars**. The default search range is one year before and after today, and the start and end dates can be changed. It is a case-insensitive partial match; searching notes, locations, or Korean initial consonants (chosung) is not supported. The bell button in a search result opens reminder settings without changing the date.
 
-예정 일정은 오늘부터 30일씩 보여줍니다. 오늘 이미 지난 일정도 포함하며, 여러 날에 걸친 일정은 각 날짜에 표시됩니다. 검색 결과나 예정 일정의 본문을 누르면 일정의 시작일로 이동합니다.
+Upcoming shows 30 days at a time starting today. It includes events that already ended today, and multi-day events appear on each date. Clicking the body of a search result or an Upcoming event jumps to the event's start date.
 
-### 미리알림 설정
+### Setting reminders
 
-1. 달력·검색 결과·예정 일정에서 원하는 일정의 **종 버튼**을 누릅니다.
-2. 시간 일정은 **몇 시간·몇 분 전**, 종일 일정은 **며칠 전·몇 시**에 알릴지 정합니다. **알림 시간 추가**로 여러 번 설정할 수 있습니다.
-3. 반복 일정은 **이번 일정만** 또는 **이 일정부터 앞으로**를 선택합니다.
-4. **저장**하고 알림 권한을 허용한 뒤, **실제 예약** 수와 상태를 확인합니다. 이미 지난 알림 시각은 건너뜁니다.
+1. Click the **bell button** of the event you want in the Calendar, search results, or Upcoming.
+2. For timed events, choose **how many hours/minutes before**; for all-day events, choose **how many days before and at what time**. Use **Add Reminder Time** to set several.
+3. For recurring events, choose **This event only** or **This and future events**.
+4. **Save**, allow notification permission, then check the **Scheduled** count and status. Reminder times that have already passed are skipped.
 
-알림은 직접 켠 일정에만 적용됩니다. 최초 기본값은 시간 일정 **1시간 전·10분 전**, 종일 일정 **전날 21시**입니다. 설정에서 기본값을 바꿀 수 있고, 일정 편집의 **기본 시간 적용**으로 복사할 수 있습니다. 기본값을 바꿔도 기존 일정의 알림은 바뀌지 않습니다.
+Reminders apply only to events you turn them on for. The initial defaults are **1 hour and 10 minutes before** for timed events and **9 PM the day before** for all-day events. You can change the defaults in Settings and copy them with **Apply Default Times** in the event editor. Changing the defaults doesn't change reminders on existing events.
 
-반복 일정의 개별 설정이나 끄기는 앞으로 규칙을 바꿔도 유지됩니다. **개별 설정 해제 · 반복 설정 따르기**로 되돌릴 수 있습니다. **알림 끄기**는 해당 범위의 예약과 표시된 알림을 정리하며, 원본 캘린더의 알림 설정은 변경하지 않습니다.
+A per-event override or turn-off on a recurring event is kept even if you change the future-events rule. You can revert it with **Clear Override · Follow Series**. **Turn Off Reminder** clears the scheduled and delivered reminders in that scope and doesn't change the source calendar's alert settings.
 
-### 앱을 종료했을 때
+### When the app is quit
 
-이미 macOS에 예약된 알림은 앱을 종료해도 전달됩니다. 알림을 누르면 앱을 열고 현재 일정을 확인한 뒤 해당 날짜로 이동합니다.
+Reminders already scheduled with macOS are delivered even after the app quits. Clicking a reminder opens the app, rechecks the current event, and goes to its date.
 
-- 반복 일정은 앞으로 1년 범위에서 가까운 알림 **최대 48개**를 우선 예약하고, 나머지는 앱 실행 중 보충합니다. 오래 종료해 두면 예약 범위 이후의 알림은 오지 않을 수 있습니다.
-- 종료 중 일정 변경·삭제나 캘린더 권한 회수는 다음 실행 전까지 반영되지 않아 **이전 제목의 알림이 남을 수 있습니다**.
-- 알림 소리와 배너는 macOS 알림 설정·집중 모드·잠자기 등의 영향을 받습니다. 다른 캘린더 앱에서 설정한 알림과의 중복은 자동으로 제거하지 않습니다.
+- For recurring events, up to **48** of the nearest reminders within the next year are scheduled first, and the rest are topped up while the app is running. If the app stays quit for a long time, reminders beyond the scheduled range may not arrive.
+- Event changes or deletions and calendar permission revocation while the app is quit aren't reflected until the next launch, so **reminders with the old title may remain**.
+- Reminder sounds and banners are affected by macOS notification settings, Focus, sleep, and so on. Duplicates with alerts set in other calendar apps are not removed automatically.
 
-## 어떻게 작동하나요?
+## How does it work?
 
 ```text
-Google 캘린더 → macOS 캘린더 동기화 → EventKit으로 읽기 → 메뉴막대에 표시
+Google Calendar → macOS calendar sync → read via EventKit → shown in the menu bar
 ```
 
-앱은 구글에 직접 로그인하지 않고, **macOS에 연결된 계정의 일정**을 읽습니다. 따라서 Google 외에도 시스템이 제공하는 캘린더를 선택할 수 있습니다.
+The app doesn't sign in to Google directly; it reads **events from accounts connected to macOS**. So besides Google, you can select any calendar the system provides.
 
-- 일정 추가·수정·삭제는 구글 캘린더나 기본 캘린더 앱에서 합니다.
-- 달력을 열거나 월·캘린더 선택이 바뀔 때, 시스템 일정 변경이나 잠자기 복귀 시 다시 읽습니다.
-- 구글에서 수정한 내용은 **macOS 동기화 이후** 반영됩니다. 즉시 동기화를 보장하지 않습니다.
-- 미리알림은 macOS의 로컬 알림으로 예약합니다. 별도 서버·구글 직접 로그인·분석 수집은 없습니다.
-- 앱은 캘린더 선택과 알림 연결에 필요한 식별자·시간·기본값을 저장하며, 일정 제목·메모·장소를 자체 파일에 저장하지 않습니다. **macOS 알림 센터에는 제목과 시각이 저장될 수 있습니다.** 설정의 **알림 제목과 시간 숨기기**를 켜면 일반 안내로 바꾸고 기존에 표시된 제목 알림도 정리합니다.
+- Add, edit, and delete events in Google Calendar or the built-in Calendar app.
+- Events are reread when the calendar opens, when the month or calendar selection changes, on system event changes, and on wake from sleep.
+- Edits made in Google appear **after macOS syncs**. Immediate sync is not guaranteed.
+- Reminders are scheduled as macOS local notifications. There is no separate server, no direct Google sign-in, and no analytics.
+- The app stores the identifiers, times, and defaults needed for calendar selection and reminder linking; it does not store event titles, notes, or locations in its own files. **The macOS Notification Center may store titles and times.** Turning on **Hide Reminder Title and Time** in Settings switches to a generic message and also clears previously delivered reminders showing titles.
 
-## 일정이나 아이콘이 안 보인다면
+## If events or the icon don't appear
 
-- **일정이 안 보임:** 기본 캘린더 앱에 일정이 있는지, 앱의 접근 권한과 표시할 캘린더 선택을 확인하세요.
-- **권한을 거절함:** 앱의 **시스템 설정 열기**에서 캘린더 접근을 허용하세요. 권한 없이도 날짜 달력은 사용할 수 있습니다.
-- **알림이 안 옴:** 일정의 알림이 켜져 있는지와 **실제 예약** 수를 확인하세요. **시스템 설정 → 알림 → Calendar Bar**에서 알림을 허용하고 집중 모드도 확인하세요. 권한 요청이 실패하거나 창이 뜨지 않으면 시스템 설정에서 직접 허용한 뒤 앱의 **예약 다시 확인**을 누르세요.
-- **일정 확인 필요:** 원본 일정의 변경으로 연결을 확실하게 확인하지 못한 상태입니다. 캘린더를 새로고침하고 현재 일정의 알림 설정을 다시 확인하세요.
-- **아이콘이 안 보임:** macOS의 **시스템 설정 → 메뉴 막대 → 메뉴 막대에서 허용**을 확인하세요. 개발 도구에서 실행한 경우 해당 도구의 항목에 묶일 수 있습니다. 앱 번들을 Finder에서 실행하는 것을 권장합니다.
+- **No events shown:** Check that the events exist in the built-in Calendar app, and check the app's access permission and selected calendars.
+- **Permission denied:** Use the app's **Open System Settings** to allow calendar access. The date calendar works even without permission.
+- **No reminders arrive:** Check that the event's reminder is on and check the **Scheduled** count. Allow notifications in **System Settings → Notifications → Calendar Bar** and check Focus too. If the permission request fails or no prompt appears, allow it directly in System Settings, then click **Recheck Schedule** in the app.
+- **Event needs confirmation:** A change to the source event means the link couldn't be confirmed reliably. Refresh the calendar and recheck the current event's reminder settings.
+- **No icon shown:** Check **System Settings → Menu Bar → Allow in the Menu Bar** in macOS. When run from a developer tool, it may be grouped under that tool's entry. Launching the app bundle from Finder is recommended.
 
-SwiftUI·AppKit·EventKit·UserNotifications·ServiceManagement로 만들었습니다. 자세한 검증 결과와 미검증 범위는 [검증 기록](docs/verification.md)에 있습니다.
+Built with SwiftUI, AppKit, EventKit, UserNotifications, and ServiceManagement. Detailed verification results and unverified scope are in the [verification record](docs/verification.md).

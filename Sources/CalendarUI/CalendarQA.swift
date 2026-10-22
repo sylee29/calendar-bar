@@ -12,27 +12,27 @@ actor QACalendarBackend: CalendarBackend {
         let today = context.calendar.startOfDay(for: now)
         let color = RGBAColor(red: 0.2, green: 0.45, blue: 0.8)
         func event(_ id: String, _ title: String, _ start: Date, allDay: Bool = false, recurring: Bool = false, end: Date? = nil) -> EventOccurrence {
-            EventOccurrence(calendarID: "qa-calendar", calendarName: "QA 샘플", color: color, eventID: id, title: title, start: start, end: end ?? start.addingTimeInterval(allDay ? 86400 : 3600), isAllDay: allDay, isRecurring: recurring, originalOccurrence: recurring ? .timed(start) : nil, confirmedSeriesKey: recurring ? "qa-series" : nil)
+            EventOccurrence(calendarID: "qa-calendar", calendarName: "QA Sample", color: color, eventID: id, title: title, start: start, end: end ?? start.addingTimeInterval(allDay ? 86400 : 3600), isAllDay: allDay, isRecurring: recurring, originalOccurrence: recurring ? .timed(start) : nil, confirmedSeriesKey: recurring ? "qa-series" : nil)
         }
         events = [
-            event("qa-soon", "QA 곧 시작하는 일정", now.addingTimeInterval(180)),
-            event("qa-timed", "QA 시간 일정", now.addingTimeInterval(7200)),
-            event("qa-recurring", "QA 반복 일정", now.addingTimeInterval(10800), recurring: true),
-            event("qa-recurring", "QA 반복 일정", now.addingTimeInterval(86400 + 10800), recurring: true),
-            event("qa-allday", "QA 종일 일정", today.addingTimeInterval(86400), allDay: true),
-            event("qa-long-title", "QA 긴 제목 · 여러 줄로 표시되는 한국어 일정 제목과 알림 버튼의 배치 및 읽기 순서를 함께 확인하는 합성 일정입니다", now.addingTimeInterval(14400)),
-            event("qa-multiday-allday", "QA 여러 날 종일 일정", context.calendar.date(byAdding: .day, value: -1, to: today)!, allDay: true, end: context.calendar.date(byAdding: .day, value: 2, to: today)!),
-            event("qa-multiday-timed", "QA 여러 날 시간 일정", context.calendar.date(byAdding: .hour, value: -6, to: today)!, end: context.calendar.date(byAdding: .hour, value: 30, to: today)!),
-            EventOccurrence(calendarID: "qa-calendar-secondary", calendarName: "QA 두 번째 캘린더", color: .init(red: 0.8, green: 0.35, blue: 0.2), eventID: "qa-secondary", title: "QA 선택 범위 확인 일정", start: now.addingTimeInterval(18000), end: now.addingTimeInterval(21600), isAllDay: false),
-            event("qa-fixed", "QA 고정 날짜 일정", context.calendar.date(from: DateComponents(year: 2026, month: 10, day: 15, hour: 14))!)
+            event("qa-soon", "QA event starting soon", now.addingTimeInterval(180)),
+            event("qa-timed", "QA timed event", now.addingTimeInterval(7200)),
+            event("qa-recurring", "QA recurring event", now.addingTimeInterval(10800), recurring: true),
+            event("qa-recurring", "QA recurring event", now.addingTimeInterval(86400 + 10800), recurring: true),
+            event("qa-allday", "QA all-day event", today.addingTimeInterval(86400), allDay: true),
+            event("qa-long-title", "QA long title · a synthetic event whose title wraps across several lines to check the layout and reading order of the title and reminder button", now.addingTimeInterval(14400)),
+            event("qa-multiday-allday", "QA multi-day all-day event", context.calendar.date(byAdding: .day, value: -1, to: today)!, allDay: true, end: context.calendar.date(byAdding: .day, value: 2, to: today)!),
+            event("qa-multiday-timed", "QA multi-day timed event", context.calendar.date(byAdding: .hour, value: -6, to: today)!, end: context.calendar.date(byAdding: .hour, value: 30, to: today)!),
+            EventOccurrence(calendarID: "qa-calendar-secondary", calendarName: "QA Second Calendar", color: .init(red: 0.8, green: 0.35, blue: 0.2), eventID: "qa-secondary", title: "QA selection scope event", start: now.addingTimeInterval(18000), end: now.addingTimeInterval(21600), isAllDay: false),
+            event("qa-fixed", "QA fixed-date event", context.calendar.date(from: DateComponents(year: 2026, month: 10, day: 15, hour: 14))!)
         ]
     }
     func permission() async -> CalendarPermission { .authorized }
     func requestAccess() async throws {}
     func calendars() async throws -> [CalendarDescriptor] {
         [
-            .init(id: "qa-calendar", name: "QA 샘플", sourceName: "합성 데이터", color: .init(red: 0.2, green: 0.45, blue: 0.8)),
-            .init(id: "qa-calendar-secondary", name: "QA 두 번째 캘린더", sourceName: "합성 데이터", color: .init(red: 0.8, green: 0.35, blue: 0.2))
+            .init(id: "qa-calendar", name: "QA Sample", sourceName: "Synthetic Data", color: .init(red: 0.2, green: 0.45, blue: 0.8)),
+            .init(id: "qa-calendar-secondary", name: "QA Second Calendar", sourceName: "Synthetic Data", color: .init(red: 0.8, green: 0.35, blue: 0.2))
         ]
     }
     func events(interval: DateInterval, calendarIDs: Set<String>) async throws -> [EventOccurrence] { events.filter { calendarIDs.contains($0.calendarID) && $0.start < interval.end && $0.end > interval.start } }

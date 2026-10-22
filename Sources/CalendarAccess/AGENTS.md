@@ -1,13 +1,13 @@
 # CalendarAccess
 
-시스템 권한·캘린더 조회·선택 저장을 담당한다.
+Owns system permissions, calendar queries, and persisting the calendar selection.
 
-EventKit 객체는 actor 내부에 둔다. 선택 ID만 저장하며 빈 선택을 전체 캘린더 조회로 바꾸지 않는다. 결과 게시 전 요청 세대와 권한을 확인한다.
+Keep EventKit objects inside an actor. Store only the selected IDs, and never turn an empty selection into a query of all calendars. Check the request generation and permission before publishing results.
 
-일정 쓰기·UI 레이아웃·로그인 항목은 소유하지 않는다.
+Does not own event writes, UI layout, or the login item.
 
-제어 가능한 가짜 backend로 오래된 응답, 권한 회수, 캘린더 소실, 실패와 0건을 검증한다. 실제 계정 요청은 자동 테스트에서 실행하지 않는다.
+Verify stale responses, permission revocation, disappearing calendars, failures, and zero results with a controllable fake backend. Automated tests never make requests against real accounts.
 
-달력·검색·예정 일정·알림 채널의 범위와 결과는 독립적이다. 전역 무효화가 대기 중인 다른 채널을 영구 로딩으로 남기거나 옛 응답을 게시하지 않도록 검사한다. 직접 발생분 확인도 범위 조회와 같은 권한·선택 경계를 적용한다. 범위 밖·삭제·실패·모호함을 구별하며 제목으로 시리즈를 연결하지 않는다.
+The ranges and results of the Calendar, search, Upcoming, and reminder channels are independent. Check that a global invalidation doesn't leave another pending channel loading forever or publish an old response. Direct occurrence lookups apply the same permission and selection boundaries as range queries. Distinguish out-of-range, deleted, failed, and ambiguous, and never link a series by title.
 
-EventKit의 원래 발생 시각을 instant와 civil date 두 값으로 전달한다. 현재 종일 여부만으로 다른 표현을 버리지 않는다. 날짜 근거의 유일성은 조회 경계의 온전한 하루까지 확인하고 실제 결과는 요청 범위로 다시 제한한다. 같은 시리즈의 날짜 충돌은 needsConfirmation이며 모호한 한 건을 임의 선택하지 않는다.
+Pass EventKit's original occurrence time as two values: instant and civil date. Don't drop the other representation based only on the current all-day flag. Check uniqueness of the date basis across whole days at the query boundary, then clamp actual results back to the requested range. A date collision within the same series is needsConfirmation; never pick one ambiguous match arbitrarily.

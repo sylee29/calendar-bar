@@ -141,7 +141,7 @@ public struct ReminderDeliverySnapshot: Equatable, Sendable {
     @ObservationIgnored private let sleep: @Sendable (TimeInterval) async throws -> Void
     public init(access: CalendarAccessController, storage: (any ReminderStorage)? = nil, backend: any ReminderNotificationBackend = SystemReminderNotifications(), context: CalendarContext = CalendarContext(timeZone: .current), now: @escaping @Sendable () -> Date = { Date() }, budget: Int = 48, observeChanges: Bool = true, sleep: @escaping @Sendable (TimeInterval) async throws -> Void = { try await Task.sleep(nanoseconds: UInt64($0 * 1_000_000_000)) }) {
         self.access = access; self.storage = storage ?? FileReminderStorage(); self.backend = backend; self.context = context; self.now = now; self.budget = max(0, budget); self.observesChanges = observeChanges; self.sleep = sleep
-        do { settings = try self.storage.load().validated() } catch { storageError = "알림 설정을 읽지 못했습니다. 기존 파일을 보존했습니다." }
+        do { settings = try self.storage.load().validated() } catch { storageError = "Couldn't read reminder settings. The existing file was kept." }
         purgeDelivered = settings.hideContent
         if observeChanges {
             let stream = access.changes()
@@ -199,7 +199,7 @@ public struct ReminderDeliverySnapshot: Equatable, Sendable {
     public func clickLink(token: String) -> ReminderLink? { settings.links[token] }
     public func requestPermission() async {
         do { try await backend.requestPermission(); permissionRequestError = nil }
-        catch { permissionRequestError = "알림 권한을 요청하지 못했습니다. 다시 시도해 주세요." }
+        catch { permissionRequestError = "Couldn't request notification permission. Please try again." }
         await refresh()
     }
     public func retry() async {
@@ -241,7 +241,7 @@ public struct ReminderDeliverySnapshot: Equatable, Sendable {
         return saved.rules.rules.last { $0.scope == .thisOccurrence && $0.identity.matchesItem(link.identity) }
     }
     private func sanitized(_ request: ReminderRequest, hidden: Bool) -> ReminderRequest {
-        hidden ? ReminderRequest(id: request.id, fireDate: request.fireDate, title: "일정 알림", body: "캘린더에서 일정을 확인하세요.", token: request.token) : request
+        hidden ? ReminderRequest(id: request.id, fireDate: request.fireDate, title: "Event reminder", body: "Check the event in Calendar.", token: request.token) : request
     }
     private func reconcile(generation: Int) async {
         armTimer()

@@ -1,188 +1,188 @@
-# 검증 기록
+# Verification Record
 
-## 자동 검증
+## Automated Verification
 
-2026-09-28, macOS 26.3.1 / Apple Silicon / Swift 6.3.3 환경.
+2026-09-28, macOS 26.3.1 / Apple Silicon / Swift 6.3.3.
 
-- `python3 scripts/verify.py`: exit 0. 내부 `swift test --jobs 2` 32개 테스트 통과, `python3 scripts/build.py` exit 0. release 앱 번들 빌드와 `codesign --verify --strict` 성공.
-- 날짜 모델 8개, 메뉴막대 날짜·로그인 상태·기준점 13개, 일정 접근 6개, 화면 상태·제스처 계산 5개다.
-- 구현 전 해당 타입이 없어 실패한 테스트(exit 1)를 확인한 뒤 구현했다. 가짜 backend는 사용자 일정과 로그인 항목을 변경하지 않는다.
+- `python3 scripts/verify.py`: exit 0. Internal `swift test --jobs 2` passed 32 tests, `python3 scripts/build.py` exit 0. Release app bundle build and `codesign --verify --strict` succeeded.
+- 8 date model tests, 13 menu bar date/login state/anchor tests, 6 event access tests, 5 view state/gesture calculation tests.
+- Before implementation, tests were confirmed failing (exit 1) because the types did not exist, then implemented. The fake backend does not change user events or login items.
 
-## 발견 후 수정한 항목
+## Found and Fixed
 
-- `Sources/CalendarCore/CalendarState.swift`의 격자 계산: America/Asuncion 2023-10을 조회하면 날짜에 01:00이 전파되어 마지막 날 다음 날짜의 첫 한 시간까지 조회했다. 각 날짜의 하루 시작 정규화로 수정했고 회귀 테스트의 실패→통과를 확인했다.
-- `Sources/CalendarCore/EventOccurrence.swift`의 빈 제목: 괄호가 빠진 표시를 명세의 '(제목 없음)'으로 수정했고 테스트 통과를 확인했다.
-- `Sources/CalendarBar/main.swift`의 초기화: Swift Package 진입점에서 main-actor delegate를 직접 초기화하면 통합 빌드 exit 1이었다. 명시적 main actor 문맥과 delegate 수명 유지로 수정 후 전체 검증 exit 0.
+- Grid calculation in `Sources/CalendarCore/CalendarState.swift`: querying America/Asuncion 2023-10 propagated 01:00 into dates, so the query covered the first hour of the day after the last day. Fixed by normalizing each date to start of day, with the regression test confirmed failing→passing.
+- Empty title in `Sources/CalendarCore/EventOccurrence.swift`: the display missing parentheses was fixed to the spec's "(No title)" and the test was confirmed passing.
+- Initialization in `Sources/CalendarBar/main.swift`: directly initializing the main-actor delegate at the Swift Package entry point made the integrated build exit 1. After fixing with an explicit main actor context and retaining the delegate, full verification exit 0.
 
-## 실제 실행과 한계
+## Real Runs and Limits
 
-- 제한 시간을 둔 `CalendarBar --smoke --show` 프로세스 실행과 앱 시작 콜백을 확인했다. 스택 표본은 NSApplication 이벤트 루프 대기를 보였다. 이는 화면 정상 동작 증거가 아니다.
-- 컴퓨터 사용 도구의 앱 bundle ID/절대 경로 접근은 `timeoutReached`로 실패했다. Finder 접근성 조회는 가능했지만 화면 캡처는 흰 화면이었다. 이후 메뉴막대 표시 허용을 바로잡고 아래의 실제 UI 검증을 진행했다.
-- 최초 빌드의 실제 권한 허용·캘린더 선택과 일정 조회는 아래에서 확인했다. 최종 재빌드의 권한, 외부 서비스 변경의 동기화와 재로그인은 따로 확인한다.
-- 초기에는 자동 로그인 항목을 가짜 backend로만 검증했다. 이후 실제 등록과 enabled 상태를 확인했으며 재로그인은 수행하지 않았다. 검증 명목으로 로그아웃하거나 재부팅하지 않았다.
+- Confirmed a time-limited `CalendarBar --smoke --show` process run and the app start callback. A stack sample showed waiting in the NSApplication event loop. This is not evidence that the UI works correctly.
+- The computer-use tool's access by app bundle ID/absolute path failed with `timeoutReached`. Finder accessibility queries worked, but screen captures were white. After correcting menu bar display permission, the real UI verification below was done.
+- Real permission grant, calendar selection, and event queries on the first build were confirmed below. Permission on the final rebuild, sync of external service changes, and re-login are checked separately.
+- Initially the auto login item was verified only with a fake backend. Real registration and enabled state were later confirmed, and re-login was not performed. No logout or reboot was done in the name of verification.
 
-## 추가 발견과 수정
+## Additional Findings and Fixes
 
-- 승인 대기 상태의 자동 실행 등록 취소 경로가 없었다. 상태를 켜짐으로 속이지 않고 등록 취소 버튼을 추가했다.
-- 여러날 종일 일정의 진행 상태를 표시하지 않았다. 종일 · 진행 중 표시와 회귀 테스트를 추가했다.
-- 오늘 색이 시스템 강조색을 따라 바뀌었다. 고정 파랑으로 수정했다.
-- 다음 자정 계산에도 Asuncion 01:00 전파 문제가 있었다. 다음날의 하루 시작으로 정규화했다.
-- 제한 실행에서 부모만 종료하고 SIGTERM을 무시하는 손자 프로세스가 남을 수 있었다. 그룹 단위 정리를 추가했다. `python3 -B -m unittest discover -s scripts -p test_run.py`: 실제 프로세스 3개 시나리오 exit 0이며 전체 검증 명령에도 포함했다.
-- 사용자 확인으로 팝오버 좌하단 표시와 외부 클릭 닫힘 실패가 드러났다. 화면 없는 기준점 표시를 차단하고 외부/앱 내부 클릭 및 앱 비활성화 닫기를 추가했다. 이후 아이콘 기준 위치와 드래그를 실제로 확인했으며 바깥 클릭 닫힘은 사용자가 확인했다.
+- There was no path to cancel registration of auto-launch in the awaiting-approval state. Instead of falsely showing on, a "Cancel Registration" button was added.
+- Progress state of multi-day all-day events was not shown. Added the "All day · In progress" display and a regression test.
+- The today color followed the system accent color. Fixed to a constant blue.
+- Next-midnight calculation also had the Asuncion 01:00 propagation problem. Normalized to the start of the next day.
+- In time-limited runs, only the parent was terminated and grandchild processes ignoring SIGTERM could remain. Added group-level cleanup. `python3 -B -m unittest discover -s scripts -p test_run.py`: 3 real-process scenarios exit 0, also included in the full verification command.
+- User checks revealed the popover appearing at the bottom-left and failing to close on outside click. Blocked showing at an anchor without a screen and added closing on outside/in-app clicks and app deactivation. Icon-anchored position and dragging were then confirmed for real, and outside-click closing was confirmed by the user.
 
-## 실제 연결 확인
+## Real Connection Check
 
-정상 앱 번들 실행에서 일정 권한 허용 후 시스템의 Google 기본 캘린더를 선택했다. 2026-09-29에서 실제 일정 2개와 시간·제목 표시, 날짜 점 표시를 UI로 확인했다. 개인 제목과 계정 주소는 이 기록에 넣지 않는다. 이 시점은 이전 빌드의 확인이며, 아래의 최종 UI 확인과 재실행 기록에서 권한 복원·드래그 결과를 추가했다.
+In a normal app bundle run, after granting event permission, the system's Google default calendar was selected. On 2026-09-29, 2 real events with time and title display, and date dots, were confirmed in the UI. Personal titles and account addresses are not included in this record. This was a check on a previous build; the final UI check and relaunch records below add permission restoration and drag results.
 
-## 최종 UI 동작 확인
+## Final UI Behavior Check
 
-메뉴막대 표시를 허용한 뒤 실제 팝오버의 연결 화살표가 상단에 붙는 것을 캡처로 확인했다. 화면 없는 좌표에서는 열지 않는 검사도 테스트했다. 왼쪽 드래그로 9/28→10/28, 오른쪽 드래그로 9/28 복귀, 24pt 짧은 드래그에 월·선택일 불변을 실제 UI에서 확인했다. Escape 후 창 접근 timeout과 명시적 재열기 시 오늘 복귀를 확인했다. 자동화 도구는 닫힌 팝오버의 접근성 내용을 보관할 수 있어 텍스트 트리 존재만으로 열린 상태라고 판정하지 않는다.
+After allowing menu bar display, a capture confirmed the real popover's arrow attaches at the top. A check that it does not open at screenless coordinates was also tested. Confirmed in the real UI: left drag 9/28→10/28, right drag back to 9/28, and month/selected date unchanged on a 24pt short drag. Confirmed window access timeout after Escape and return to today on explicit reopen. Automation tools can retain accessibility content of a closed popover, so the mere presence of a text tree is not judged as an open state.
 
-Apple 캘린더에서 같은 Google 캘린더의 9/29 일정 개수·제목·시각이 앱의 이전 조회와 일치함을 읽기 전용으로 대조했다. 캘린더 원본에는 쓰지 않았다. 이 기록 뒤 동일 설치본의 재실행에서 권한과 선택 복원을 확인했다. 바깥 클릭은 이후 사용자가 최종 정상 동작을 확인했다.
+The count, titles, and times of 9/29 events in the same Google calendar in Apple Calendar were compared read-only and matched the app's earlier query. Nothing was written to the calendar source. After this record, permission and selection restoration were confirmed on a relaunch of the same install. Outside-click closing was later confirmed by the user as working correctly.
 
-## 재실행과 자동 실행 확인
+## Relaunch and Auto-Launch Check
 
-동일 설치본을 앱의 종료 버튼으로 종료한 뒤 다시 열어 캘린더 접근과 선택이 유지되고 정상 0건 상태로 돌아오는 것을 확인했다. Google 9/29 일정 2개와 9/17 종일 일정 1개의 표시를 최종 UI에서 읽었다. 2026년 8월의 6주 배치를 캡처하여 마지막 주와 일정 영역이 함께 보이는지 확인했다.
+After quitting the same install with the app's quit button and reopening it, calendar access and selection were retained and it returned to the successful 0-result state. Display of 2 Google events on 9/29 and 1 all-day event on 9/17 was read in the final UI. The 6-week layout of August 2026 was captured to confirm the last week and the event area are visible together.
 
-실제 설치본의 로그인 실행 스위치를 켠 뒤 시스템 조회 상태가 enabled로 바뀌는 것을 확인했다. 최초 상태 notFound를 실패 표시로 처리하면서 초기 등록을 건너뛰는 코드 경로를 발견하여 최초 실행은 enabled/승인 대기 이외 상태에서 등록을 시도하도록 고쳤다. 회귀 테스트 실패→통과를 확인했다. 실제 로그아웃/재로그인은 수행하지 않았다.
+After turning on the Launch at login switch in the real install, the system-queried state changed to enabled. Found a code path that skipped initial registration while treating the initial notFound state as a failure display, and fixed the first launch to attempt registration in states other than enabled/awaiting approval. Regression test failing→passing confirmed. Real logout/re-login was not performed.
 
-## 초기 구현 당시 수정 위치
+## Fix Locations at Initial Implementation
 
-| 확인한 문제 | 초기 기록 위치(이후 이동 가능) |
+| Problem found | Location as initially recorded (may have moved since) |
 |---|---|
-| 자정 건너뛰기 월 격자 | `Sources/CalendarCore/CalendarState.swift:23` |
-| 빈 제목 괄호 | `Sources/CalendarCore/EventOccurrence.swift:42` |
-| 앱 진입 main actor | `Sources/CalendarBar/main.swift:26` |
-| 승인 대기 등록 취소 | `Sources/CalendarUI/CalendarPopover.swift:174` |
-| 종일 연속 일정 구분 | `Sources/CalendarUI/CalendarModel.swift:56` |
-| 오늘 고정 파랑 | `Sources/CalendarUI/CalendarPopover.swift:77` |
-| 다음 자정 보정 | `Sources/MenuBar/StatusDate.swift:10` |
-| 하위 프로세스 정리 | `scripts/run.py:38` |
-| 화면 없는 팝오버 기준점 | `Sources/MenuBar/MenuBarController.swift:81` |
-| 외부 클릭·비활성화 닫기 | `Sources/MenuBar/MenuBarController.swift:91` |
-| 최초 notFound 상태 등록 | `Sources/MenuBar/LoginItemController.swift:78` |
+| Month grid with skipped midnight | `Sources/CalendarCore/CalendarState.swift:23` |
+| Empty title parentheses | `Sources/CalendarCore/EventOccurrence.swift:42` |
+| App entry main actor | `Sources/CalendarBar/main.swift:26` |
+| Cancel registration awaiting approval | `Sources/CalendarUI/CalendarPopover.swift:174` |
+| Distinguishing continuing all-day events | `Sources/CalendarUI/CalendarModel.swift:56` |
+| Constant blue for today | `Sources/CalendarUI/CalendarPopover.swift:77` |
+| Next midnight correction | `Sources/MenuBar/StatusDate.swift:10` |
+| Child process cleanup | `scripts/run.py:38` |
+| Screenless popover anchor | `Sources/MenuBar/MenuBarController.swift:81` |
+| Closing on outside click/deactivation | `Sources/MenuBar/MenuBarController.swift:91` |
+| Registration from initial notFound state | `Sources/MenuBar/LoginItemController.swift:78` |
 
-최종 설치본 권한 허용 후 추가 확인: 사용자가 시스템 허용을 마쳤고, 앱에서 Google 기본 캘린더의 2026-09-29 일정 2개를 다시 읽는 것을 확인했다. 이제 권한 허용 대기 상태는 해소됐다. 바깥 클릭으로 닫히는 동작도 이후 사용자가 확인했다.
+Additional check after granting permission on the final install: the user completed the system grant, and the app was confirmed to read the 2 events on 2026-09-29 in the Google default calendar again. The awaiting-permission state is now resolved. Outside-click closing was also later confirmed by the user.
 
-2026-09-28 사용자 최종 확인: 바깥 클릭 닫힘 질문에 정상 동작을 확인했고, README 소개·사용법·작동 방식 작성 및 GitHub 공개 게시를 요청했다.
+2026-09-28 final user confirmation: answering the outside-click closing question, the user confirmed it works correctly and requested a README introduction, usage, and how-it-works write-up and public publishing on GitHub.
 
-## 부드러운 월 전환 수정
+## Smooth Month Transition Fix
 
-- 원인: `CalendarPopover`의 기존 제스처가 `onEnded`에서 월 값만 바꾸어 드래그 중 위치 피드백과 전환 애니메이션이 없었다.
-- 수정: `Sources/CalendarUI/MonthPaging.swift`의 드래그 상태와 이전/현재/다음 페이지, `CalendarPopover`의 이동·복귀 애니메이션을 추가했다. 전환이 끝나야 실제 월과 조회 범위를 바꾼다. 재열기 시 이전 콜백을 무효화하고 동일 페이지의 불필요한 날짜·일정 점 재계산을 억제한다.
-- `python3 scripts/verify.py`: exit 0. Swift 35개 테스트, 프로세스 정리 3개 테스트, release 빌드·서명 검증 통과.
-- 새 회귀 테스트는 드래그 위치 추적, 한 페이지 이동 제한, 전환 중 입력 잠금, 중복 완료 방지, 짧은 드래그 복귀, 오래된 콜백 무효화를 확인한다. 구현 전 타입 미정의로 컴파일 실패한 뒤 구현 후 통과했다. 이 자동 테스트만으로 시각적인 부드러움을 측정했다고 주장하지 않는다.
-- 설치본을 교체했다. 화면 자동화의 `noWindowsAvailable`로 직접 드래그 검증은 완료하지 못했으며, 사용자가 설치본을 조작하고 정상 동작을 확인했다.
+- Cause: the existing gesture in `CalendarPopover` changed only the month value in `onEnded`, so there was no position feedback during the drag and no transition animation.
+- Fix: added drag state and previous/current/next pages in `Sources/CalendarUI/MonthPaging.swift`, and move/snap-back animations in `CalendarPopover`. The actual month and query range change only after the transition ends. Reopening invalidates previous callbacks, and unnecessary recalculation of date and event dots for the same page is suppressed.
+- `python3 scripts/verify.py`: exit 0. 35 Swift tests, 3 process cleanup tests, release build and signature verification passed.
+- New regression tests check drag position tracking, one-page move limit, input lock during transitions, duplicate completion prevention, short-drag snap-back, and stale callback invalidation. They failed to compile before implementation due to undefined types and passed after. These automated tests alone are not claimed to measure visual smoothness.
+- The install was replaced. Direct drag verification could not be completed due to screen automation's `noWindowsAvailable`; the user operated the install and confirmed correct behavior.
 
 
-## 검색·예정 일정·앱 알림 검증
+## Search, Upcoming, and App Reminder Verification
 
-2026-09-28, Swift 네이티브 QA 번들을 실제 설치본과 다른 식별자로 분리했다. 시스템 캘린더 원본에는 쓰지 않았으며 실제 계정 일정·제목·주소는 이 검증에 사용하지 않았다.
+2026-09-28, the Swift native QA bundle was separated with an identifier different from the real install. Nothing was written to system calendar sources, and real account events, titles, and addresses were not used in this verification.
 
-| 명령 | 종료 결과 | 확인 범위 |
+| Command | Exit result | Scope confirmed |
 |---|---|---|
-| `python3 scripts/verify.py` | 0 | Swift 99개, Python 5개, release 번들·ad-hoc 서명 검증 |
-| `python3 -B -m unittest discover -s scripts -p test_run.py` 구현 전 | 1 | 새 그룹 확인 테스트 2개 실패, 기존 실제 하위 프로세스 테스트 3개 유지 |
-| 같은 Python 명령 구현 후 | 0 | EPERM 뒤 실제 그룹 존재 시 오류 유지, 부재 확인, 성공·실패·시간 초과의 손자 정리 |
-| `python3 scripts/prepare_qa.py` | 0 | 별도 `.qa` 번들 복사·서명 |
-| `python3 scripts/run_qa.py 2 build/CalendarBarQA.app --smoke --qa-window` | 124 | 제한 시간 만료 뒤 `QA_PROCESS_ABSENT`, OS 알림을 쓰지 않는 실행 |
+| `python3 scripts/verify.py` | 0 | 99 Swift, 5 Python, release bundle and ad-hoc signature verification |
+| `python3 -B -m unittest discover -s scripts -p test_run.py` before implementation | 1 | 2 new group-check tests failed, 3 existing real child-process tests held |
+| Same Python command after implementation | 0 | Error kept when real group exists after EPERM, absence confirmed, grandchild cleanup on success/failure/timeout |
+| `python3 scripts/prepare_qa.py` | 0 | Separate `.qa` bundle copied and signed |
+| `python3 scripts/run_qa.py 2 build/CalendarBarQA.app --smoke --qa-window` | 124 | `QA_PROCESS_ABSENT` after time limit expiry; run that does not write OS notifications |
 
-`run.py`의 별도 `/bin/sleep` 1초 제한 실행에서 종료 후 그룹 확인 EPERM을 재현했다. 그룹 부재를 `ps`로 독립 확인하는 수정 뒤 실제 자손 종료 테스트가 통과했다. 테스트 실패를 OS 알림 또는 앱 크래시로 해석하지 않았다.
+In a separate 1-second time-limited run of `/bin/sleep` in `run.py`, EPERM on the group check after exit was reproduced. After a fix that independently confirms group absence via `ps`, the real descendant termination test passed. Test failures were not interpreted as OS notifications or app crashes.
 
-### 실제 화면에서 확인한 항목
+### Confirmed on the Real Screen
 
-- 제목 검색 기본 기간 2025-09-28–2027-09-28, 종료일을 2026-09-28로 줄이면 10/15 결과 제외, 시작일이 종료일 뒤이면 오류, 없는 검색어는 0건 안내. 두 번째 합성 캘린더를 선택하기 전에는 그 제목이 0건이고 선택 후 1건이다.
-- 고정 합성 검색 결과를 누르면 2026년 10월·15일 선택으로 이동하고 해당 행 배경이 강조된다. 검색 지우기는 달력으로 복귀하고 보기 세그먼트 전환이 동작한다. 실패 상태·제목 외 필드 제외는 가짜 backend 자동 테스트로 확인한 범위다.
-- 예정 일정 기간은 9/28–10/27에서 더 보기로 11/26까지 늘어난다. 세로 스크롤은 예정 화면을 유지한다. 여러날 일정이 다음 날짜에서 빈 행으로 사라지는 실제 결함을 발견했고 `Sources/CalendarUI/CalendarPopover.swift:246`의 날짜+발생분 식별자로 수정한 뒤 9/28·9/29 모두 행과 종 버튼이 나타남을 AX와 화면으로 확인했다.
-- 일반 QA 창과 Finder로 연 실제 메뉴 팝오버를 구별하여 확인했다. 2026-02의 4주, 2026-09의 5주, 2026-08의 6주 격자와 일정 영역이 함께 렌더된다. 긴 제목의 AX 전체 내용과 종 버튼을 확인했다.
-- 시간 알림 2분·1분 입력, 시간 추가·삭제, 기본값 10→15분 저장 후 기존 2분·1분 유지, 기본 시간 적용 후 60분·15분 복사를 확인했다. 종일은 전날 21시와 당일 09:30 두 시간을 저장했다. 반복 앞으로 규칙, 이번 발생분 20분 예외, 개별 설정 해제 후 10분 복원과 끄기를 확인했다.
-- 내용 숨김 체크, 권한 요청 실패 안내, 설정상 켜짐과 실제 예약 0·권한 필요 상태 구분을 확인했다. 실패/권한 상실/선택 해제/조회 경쟁/반복 예외 유지/손상 설정 정리는 자동 가짜 backend 검증이며 실제 사용자 권한을 회수한 테스트로 보고하지 않는다.
+- Title search default range 2025-09-28–2027-09-28; shrinking the end date to 2026-09-28 excludes the 10/15 result; a start date after the end date is an error; a nonexistent query shows the 0-result message. Before selecting the second synthetic calendar its title has 0 results, and 1 after selection.
+- Clicking the fixed synthetic search result moves to October 2026 with the 15th selected, and that row's background is highlighted. Clearing search returns to the calendar, and the view segment switch works. Failure states and exclusion of non-title fields are the scope confirmed by fake-backend automated tests.
+- The Upcoming range extends from 9/28–10/27 to 11/26 with "Show 30 more days". Vertical scrolling keeps the Upcoming view. Found a real bug where multi-day events vanished as empty rows on the next date, fixed it with date+occurrence identifiers at `Sources/CalendarUI/CalendarPopover.swift:246`, and confirmed via AX and screen that rows and bell buttons appear on both 9/28 and 9/29.
+- Checked the regular QA window and the real menu popover opened from Finder separately. 4-week grid for 2026-02, 5-week for 2026-09, and 6-week for 2026-08 render together with the event area. Confirmed full AX content of a long title and the bell button.
+- Confirmed timed reminder 2-minute and 1-minute input, adding and removing times, saving default 10→15 minutes while existing 2 and 1 minutes are kept, and copying 60 and 15 minutes after applying default times. For all-day, saved two times: 21:00 the day before and 09:30 the same day. Confirmed the recurring future rule, a 20-minute "This event only" override, restoration to 10 minutes after clear override, and turning off.
+- Confirmed the content-hiding checkbox, permission request failure message, and distinction between enabled in settings and scheduled 0/permission-needed states. Failure, permission loss, deselection, query races, keeping recurring overrides, and corrupted settings cleanup are automated fake-backend verification and are not reported as tests that revoked real user permission.
 
-### OS 알림 관찰과 아직 남은 항목
+### OS Reminder Observations and Remaining Items
 
-직접 실행·LaunchServices·보조 실행 파일 없는 새 식별자 `local.ian.CalendarBar.runtime.qa`의 Finder 실행 모두 초기 권한 요청 실패 안내를 보였다. 별도 보조 프로브는 UNErrorDomain 1과 빈 목록을 반환했지만 OS 로그가 그 프로브 요청 자체를 거절하므로 원래 앱의 빈 목록 증거로 사용하지 않았다. 보조 프로브는 최종 도구에 포함하지 않는다. ad-hoc 서명 여부만으로 실패 원인을 단정하지 않는다.
+Direct launch, LaunchServices, and Finder launch of the new identifier `local.ian.CalendarBar.runtime.qa` without helper executables all showed the initial permission request failure message. A separate helper probe returned UNErrorDomain 1 and an empty list, but OS logs rejected that probe's own request, so it was not used as evidence of the original app's empty list. The helper probe is not included in the final tooling. The cause of failure is not concluded from ad-hoc signing alone.
 
-시스템 설정에 Calendar Bar QA와 Calendar Bar Runtime QA가 각각 등록되어 있고 알림 허용이 꺼져 있음을 읽었다. 시험용 Runtime QA 항목만 켠 뒤 실제 앱의 권한 필요 안내가 사라졌다. 다른 앱·전역 공유/미러링 알림 정책은 변경하지 않았다. 두 알림을 저장하자 시스템 대기 요청 재조회에 기반한 UI가 실제 예약 2개·보류 0개로 바뀌었다.
+Read that Calendar Bar QA and Calendar Bar Runtime QA were each registered in System Settings with notification permission off. After turning on only the test Runtime QA entry, the real app's permission-needed message disappeared. Other apps and global sharing/mirroring notification policies were not changed. Saving two reminders changed the UI, based on re-querying system pending requests, to 2 scheduled and 0 deferred.
 
-합성 기준 시각 Unix 1790572429, 발생 시작은 180초 뒤, 알림 트리거는 1790572489와 1790572549다. QA 프로세스는 첫 트리거 전 Unix 1790572480.56688에 종료했으며 프로세스 목록에서 부재를 확인했다. 원래 설치본 PID 98965의 실행 경로는 그대로 유지됐다. 알림 센터 도구가 날씨 위젯 창만 반환하여 배너·알림 클릭을 아직 직접 관찰하지 못했다. OS 전달 목록 확인과 콜드·웜 클릭 목적일 검증을 완료로 보고하지 않는다.
-
-
-2026-09-28 후속 사용자 확인: 사용자가 “알람보여”라고 응답하여 실제 시험 알림이 화면에 표시됨을 확인했다. 이는 사용자 수동 관찰이며 도구가 배너를 캡처했거나 OS 전달 목록에서 확인한 증거는 아니다. 두 알림 각각의 도착, 알림 클릭, 콜드·웜 실행의 목적 날짜·행 강조까지 확인한 것으로 확대하지 않는다. 클릭 후 시험용 달력과 해당 일정 행이 열리는지는 사용자 답변 대기 중이다.
-
-원본 CalendarBar 실행 파일에 추가한 `.qa` 전용 읽기 명령은 앱 delegate·일정 조회·설정 쓰기·예약 재조정을 시작하기 전에 OS 상태만 읽는다. `python3 scripts/run.py 15 build/CalendarBarRuntimeReport.app/Contents/MacOS/CalendarBar --qa-notification-report`: exit 0, authorization=2, alert=2, pending=0, delivered=0. 이 복사본은 같은 Runtime QA bundle ID지만 예약 당시 실행 파일과 코드 해시가 달라 결과의 동일성 한계가 있다. 빈 전달 목록으로 배너가 실제 도착했다고 판단하지 않는다. 사용자 클릭 대상인 기존 번들은 교체하지 않았다.
-
-`security find-identity -v -p codesigning` 읽기 조회는 exit 0, 유효 identity 수 0이었다. 이 사실은 ad-hoc 빌드 환경을 설명할 뿐 최초 권한 요청 실패 원인이나 전달 실패 원인을 확정하지 않는다. 유료 계정 작업·인증서 생성·전역 개인정보 설정 변경은 하지 않았다.
+Synthetic base time Unix 1790572429, occurrence start 180 seconds later, reminder triggers 1790572489 and 1790572549. The QA process was terminated at Unix 1790572480.56688 before the first trigger, and its absence was confirmed in the process list. The original install PID 98965's executable path was unchanged. The Notification Center tool returned only the Weather widget window, so the banner and reminder click have not yet been observed directly. OS delivered-list checks and cold/warm click target date verification are not reported as complete.
 
 
-### 초기 클릭 대기 당시의 보존 상태 (과거 기록)
+2026-09-28 follow-up user confirmation: the user replied "I can see the alarm" (translated from Korean), confirming the real test reminder appeared on screen. This is the user's manual observation, not evidence that a tool captured the banner or confirmed it in the OS delivered list. It is not extended to confirming each of the two reminders' arrival, the reminder click, or the target date and row highlight for cold/warm launches. Whether the test calendar and that event row open after a click awaits the user's answer.
 
-아래는 최초 사용자 수동 클릭 확인을 기다리던 시점의 기록이며 현재 보존 상태나 작업 중단 지침이 아니다. 이후 상태는 마지막 후속 검증 단락을 따른다. 당시 프로젝트 루트의 `build/CalendarBarRuntimeQA.app`은 예약 당시 번들을 그대로 보존한다. Runtime QA 알림 허용은 켜짐이고 전역 공유 정책은 변경하지 않았다. 진단용 `build/CalendarBarRuntimeReport.app`은 검증 체크아웃의 별도 복사본이며 원래 클릭 대상을 교체하지 않는다. 추가 예약과 GUI 조작을 중단했다.
+The `.qa`-only read command added to the original CalendarBar executable reads only OS state before starting the app delegate, event queries, settings writes, or schedule rebalancing. `python3 scripts/run.py 15 build/CalendarBarRuntimeReport.app/Contents/MacOS/CalendarBar --qa-notification-report`: exit 0, authorization=2, alert=2, pending=0, delivered=0. This copy has the same Runtime QA bundle ID but a different executable and code hash from the time of scheduling, which limits the equivalence of the result. An empty delivered list is not used to judge that the banner actually arrived. The existing bundle that is the user's click target was not replaced.
 
-Runtime QA의 `~/Library/Application Support/local.ian.CalendarBar.runtime.qa/qa-launch.json`은 notifications=true, 합성 기준 Unix 1790572429다. `qa-reminders.json`에는 시험용 가까운 일정의 활성 규칙 1개가 남아 있다. 이전 Calendar Bar QA 식별자는 opt-in=false, 활성 규칙 0개다. 이 값은 앱 설정 의도이며 OS 대기·전달 상태와 동치가 아니다.
-
-자체 QA 프로세스와 보고 프로세스는 종료했다. watchdog은 소유 PID와 작업 경로를 확인하고 앱 부재 상태에서 중지했으므로 사용자가 알림 클릭으로 연 앱을 뒤늦게 종료하지 않는다. 최종 프로세스 검사에서 기존 `/Users/ian/Applications/CalendarBar.app/Contents/MacOS/CalendarBar` PID 98965만 유지됐다. 실제 클릭 확인 이후에 QA 알림과 규칙을 정리하고 QA 알림 허용을 시험 전 꺼짐으로 복원한다. 기능 완료·새 설치본 배포·push는 수행하지 않았다.
+The read-only query `security find-identity -v -p codesigning` exit 0, valid identity count 0. This only describes the ad-hoc build environment and does not determine the cause of the initial permission request failure or a delivery failure. No paid account work, certificate creation, or global privacy settings changes were made.
 
 
-### 반복 형식 변경·예외 복원 수정 검증
+### Preserved State While Awaiting the Initial Click (Historical Record)
 
-현재 표시 형식과 독립된 원래 instant·civil 근거, 모호한 날짜 근거의 확인 필요·편집 차단, 같은 시리즈의 앞으로 경계 표현 계승, 저장된 개별 identity·anchor를 사용한 예외 해제를 추가 회귀 테스트로 확인했다. 조회용 대체 근거만 늘었으며 알림 설정 version 1 구조는 유지한다.
+The following records the time when the first manual user click confirmation was awaited, and is not the current preserved state or an instruction to halt work. Later state follows the last follow-up verification paragraph. At that time, `build/CalendarBarRuntimeQA.app` in the project root preserved the bundle as it was at scheduling. Runtime QA notification permission was on, and global sharing policy was not changed. The diagnostic `build/CalendarBarRuntimeReport.app` is a separate copy in the verification checkout and does not replace the original click target. Additional scheduling and GUI interaction were stopped.
 
-수정 전용 체크아웃에서 실행한 `python3 scripts/verify.py`는 exit 0이다. `/tmp/calendar-format-restore-final-verify.log`에서 Swift 108개·기존 Python 정리 테스트 3개 및 release·서명 검증 통과를 확인했다. 이는 앞선 통합 체크아웃의 99개 Swift·5개 Python 결과와 실행 출처가 다르다. 이후 2026-09-28 프로젝트 루트에서 `python3 scripts/verify.py`를 다시 실행해 exit 0을 확인했다. 이 단일 통합 실행에서 Swift 108개·Python 정리 테스트 5개·release 빌드·서명 검증이 모두 통과했다. 서로 다른 실행 결과를 합산한 수치가 아니다.
+Runtime QA's `~/Library/Application Support/local.ian.CalendarBar.runtime.qa/qa-launch.json` has notifications=true, synthetic base Unix 1790572429. `qa-reminders.json` retains 1 active rule for the near test event. The previous Calendar Bar QA identifier has opt-in=false and 0 active rules. These values are the app's settings intent and are not equivalent to OS pending/delivered state.
 
-이번 갱신에서는 문서 참조·차이만 검사했다. 실제 시험 알림 표시는 사용자 확인이 있고 콜드·웜 클릭은 여전히 답변 대기다. GUI 조작·QA 알림 정리·허용 복원을 수행하지 않았다.
-
-### 사용자 알림 클릭 결과
-
-사용자는 시험 미리 알림이 표시된다고 확인한 뒤, 누르면 사라지고 끝나며 달력이 열리지 않는다고 보고했다. 이 결과를 실제 클릭 성공으로 처리하지 않는다. 시험 예약 전 앱 부재와 클릭 후 새 QA 프로세스 실행은 확인했지만, 이후 컴퓨터 사용 도구가 읽은 팝오버는 도구 활성화의 영향을 받을 수 있다. 클릭 진입·화면 준비·날짜 전달을 분리해 진단하고 수정 후 실제 클릭을 다시 확인한다.
-
-알림 클릭 수명 수정 뒤 프로젝트 루트 `python3 scripts/verify.py`는 exit 0, Swift 113개·Python 5개·release 빌드·서명 검증이 통과했다. 실제 coordinator와 표시 드라이버를 연결한 테스트에서 준비 지연·비활성화·새 재열기·목적 날짜·강조·2초 만료·일반 재열기 초기화를 확인했다. 단위 테스트 성공을 사용자 클릭 성공으로 대신하지 않는다. 당시 재시험을 위한 QA 전용 상수 단계 진단은 임시로 추가했으며 후속 제거 상태는 아래에 기록한다.
+Our own QA process and report process were terminated. The watchdog checked its owned PID and working path and stopped in the app-absent state, so it will not belatedly kill an app the user opens via reminder click. In the final process check, only the existing `/Users/ian/Applications/CalendarBar.app/Contents/MacOS/CalendarBar` PID 98965 remained. After the real click is confirmed, QA reminders and rules will be cleaned up and QA notification permission restored to off as before the test. Feature completion, new install deployment, and push were not performed.
 
 
-### 팝오버 우선 표시 수정 이후의 후속 검증
+### Recurrence Format Change and Override Restoration Fix Verification
 
-같은 식별자의 오래된 QA 진단 번들을 등록 해제하고 백업 후 제거했다. 활성화를 먼저 기다리던 경로는 유효한 팝오버를 먼저 표시한 뒤 활성화를 요청하도록 수정했다. Orca 꺼짐에서 실제 QA 팝오버와 showSucceeded는 확인됐으나 이는 알림 클릭 성공 증거가 아니다.
+Additional regression tests confirmed: original instant and civil evidence independent of the current display format, needs confirmation and edit blocking for ambiguous date evidence, inheriting the boundary representation for future rules in the same series, and clearing overrides using the stored per-event identity and anchor. Only fallback evidence for lookup was added, and the reminder settings version 1 structure is kept.
 
-보존 로그 `.dryforge/window-first-integrated-clean.log`를 이번 문서 갱신에서 직접 읽었다. 2026-09-28 18:01 실행의 Swift 116개·실패 0, Python 9개·OK, Swift/Python/build 세 단계의 EXIT 0을 확인했다. build 단계는 release 번들·서명 검증을 포함한다. 앞선 108개/5개와 113개/5개 기록은 각각 과거 실행이며 수치를 합산하지 않는다. 이 로그에는 실행 SHA가 고정돼 있지 않으므로 현재 HEAD 또는 후속 진단 제거 변경까지 검증됐다고 확대하지 않는다. 문서 담당자는 보존 로그를 읽었으며, 메인 검증자의 후속 통합 실행 결과는 아래에 별도로 기록한다.
+`python3 scripts/verify.py` run in the fix-only checkout exited 0. `/tmp/calendar-format-restore-final-verify.log` showed 108 Swift, 3 existing Python cleanup tests, and release and signature verification passing. This comes from a different run than the earlier integrated checkout's 99 Swift and 5 Python results. Later on 2026-09-28, `python3 scripts/verify.py` was rerun from the project root and exited 0. In this single integrated run, 108 Swift, 5 Python cleanup tests, release build, and signature verification all passed. These are not summed numbers from different runs.
 
-재개 시 메인 검증자가 같은 canonical QA 실행 파일의 보고 명령에서 exit 0, authorization=2, alert=2, pending=0, delivered=1을 확인했다. 새 단계 진단에서는 launch만 확인됐다. 전달 목록 1건과 프로세스 실행은 실제 클릭 콜백·화면 표시·목적 날짜·행 강조 성공을 증명하지 않는다. 콜드·웜 클릭 재시험과 실제 OS 알림 끄기·내용 숨김·권한 회수 시 정리 검증은 남아 있다. 최초 권한 요청 실패 원인, 실제 계정 반복 예외 조합, 재로그인·재부팅 지속성도 미해결·미검증으로 유지한다.
+This update checked only doc references and diffs. Real test reminder display has user confirmation, and cold/warm clicks still await an answer. GUI interaction, QA reminder cleanup, and permission restoration were not performed.
 
-최소 지원 macOS 14의 실제 실행은 미검증이다. macOS 26.3.1에서의 실행이나 최소 타깃 빌드 성공으로 구버전 동작을 보장하지 않는다. 시험 종료 후 QA 규칙·대기/표시 알림 정리·QA 알림 허용의 원래 꺼짐 복원이 남아 있다. 임시 단계 진단은 `185d998`에서 소스와 전용 테스트를 제거했다. 실제 클릭 재시험을 위한 기존 canonical QA 진단 빌드는 보존하며 소스 제거와 설치된 시험 번들 상태를 구별한다. 진단 제거 후 메인 검증자가 `185d998`에서 프로젝트 루트 전체 검증을 실행했다. `.dryforge/resume-integrated-verify.log`의 2026-09-28 21:44 실행에서 Swift 114개·실패 0, Python 9개·OK, 세 단계 EXIT 0과 INTEGRATED_EXIT 0을 문서 담당자가 직접 확인했다. release 번들·서명 검증을 포함한다. 116개에서 114개로 감소한 것은 임시 진단 전용 테스트 2개 제거에 따른 것이다. 이 통합 검증 시점에는 실제 클릭 성공 여부가 미확인이었으며 후속 확인 범위는 아래에 기록한다.
+### User Reminder Click Result
 
+After confirming the test reminder appears, the user reported that clicking it just dismissed it and the calendar did not open. This result is not treated as a real click success. App absence before the test schedule and a new QA process launching after the click were confirmed, but the popover the computer-use tool later read may have been affected by the tool's activation. Click entry, view readiness, and date delivery will be diagnosed separately, and the real click rechecked after the fix.
 
-### 콜드 클릭 화면 표시 확인과 웜 클릭 확인 경과
-
-후속 콜드 클릭에서 사용자는 기존 알림을 누르자 화면이 열린다고 확인했다. 메인 검증자의 GUI 조작 전에 QA PID 41981의 단계 진단은 launch → responseWithToken → routeBegin/showRequested → showFailed → routeHighlighted → waitingAnchor 2회 → showSucceeded → popoverDidShow를 기록했다. 표시 성공은 요청 후 약 0.41초이며 약 4초 뒤 closeRequested가 기록됐다. canonical QA 한 개와 기존 정상 앱 PID 61441이 유지됐다. 이는 실제 OS 클릭에 따른 실행·화면 표시 증거다. routeHighlighted는 모델 상태이므로 목적 날짜·행 강조의 실제 화면 확인으로 확대하지 않는다.
-
-웜 클릭 재시험은 2026-09-28 21:56 KST 알림 한 개로 준비했다. UI에서 20시간 16분 전 항목을 저장한 뒤 같은 실행 파일의 보고에서 pending=1, 발송 시각 2026-09-28T21:56:00+09:00, delivered=0을 확인했다. 달력을 오늘로 돌리고 Escape로 닫은 뒤 QA 프로세스를 유지했다. 21:56 이후 같은 실행 파일 보고는 exit 0, pending=0, delivered=1이었으나 새 responseWithToken은 없었다. 이 시점에는 전달 목록만 확인했으며 사용자 클릭과 정리 검증은 대기 상태였다. 이후 결과는 아래와 같다.
+After the reminder-click lifecycle fix, project-root `python3 scripts/verify.py` exited 0, with 113 Swift, 5 Python, release build, and signature verification passing. Tests wiring the real coordinator to the display driver confirmed readiness delay, deactivation, new reopen, target date, highlight, 2-second expiry, and normal reopen reset. Unit test success does not substitute for user click success. QA-only constant step diagnostics for the retest were added temporarily at that time, and their later removal is recorded below.
 
 
-### 웜 클릭 확인과 최종 코드의 실제 알림 정리
+### Follow-Up Verification After the Popover-First Display Fix
 
-사용자는 웜 클릭 후 9월 29일 이동·행 강조 확인 질문에 “ㅇㅇ확인”이라고 답했다. 메인 검증자의 GUI 재선택 전에 동일 QA PID 41981에서 responseWithToken → routeBegin → showSucceeded → routeHighlighted → popoverDidShow가 기록됐고 프로세스 재실행은 없었다. 웜 클릭의 날짜·강조는 사용자 관찰과 진단을 함께 근거로 삼는다. 앞선 콜드 클릭 확인은 사용자 화면 표시와 단계 진단의 범위이며, 콜드 목적 날짜·강조의 실제 화면까지 확인한 것으로 확대하지 않는다.
+An old QA diagnostic bundle with the same identifier was unregistered, backed up, and removed. The path that first waited for activation was fixed to show a valid popover first and then request activation. With Orca off, the real QA popover and showSucceeded were confirmed, but this is not evidence of reminder click success.
 
-클릭 시험 후 QA PID 41981을 종료했고 600초 제한 watchdog 세션 64060은 exit 0, QA_PROCESS_ABSENT로 끝났다. canonical `build/CalendarBarRuntimeQA.app`의 실행 파일을 최종 진단 제거 `build/CalendarBar.app` 실행 파일로 교체한 뒤 ad-hoc 서명과 서명 검증 exit 0을 확인했다. 다른 QA 복사본은 생성하지 않았으며 실사용 설치본 파일은 바꾸지 않았다. 이후 `scripts/run_qa.py`의 600초 제한과 `--qa --qa-notifications --qa-window` 옵션으로 최종 코드의 실제 화면과 OS 예약 정리를 검증했다.
+The preserved log `.dryforge/window-first-integrated-clean.log` was read directly during this doc update. For the 2026-09-28 18:01 run, it confirmed 116 Swift with 0 failures, 9 Python OK, and EXIT 0 for all three stages Swift/Python/build. The build stage includes release bundle and signature verification. The earlier 108/5 and 113/5 records are each past runs and are not summed. This log does not pin the run SHA, so it is not extended to verifying the current HEAD or the later diagnostics-removal change. The doc author read the preserved log, and the main verifier's later integrated run result is recorded separately below.
 
-| 실제 조작 | UI 및 같은 실행 파일의 OS 조회 결과 |
+On resumption, the main verifier confirmed exit 0, authorization=2, alert=2, pending=0, delivered=1 from the report command of the same canonical QA executable. New step diagnostics showed only launch. One delivered-list entry and a process launch do not prove the real click callback, screen display, target date, or row highlight succeeded. Cold/warm click retests and cleanup verification on real OS reminder turn-off, content hiding, and permission revocation remain. The cause of the initial permission request failure, real-account recurring override combinations, and re-login/reboot persistence also remain unresolved/unverified.
+
+Actual execution on the minimum supported macOS 14 is unverified. Running on macOS 26.3.1 or a successful minimum-target build does not guarantee behavior on older versions. After the test ends, cleaning up QA rules and pending/displayed reminders and restoring QA notification permission to its original off remain. The temporary step diagnostics' source and dedicated tests were removed in `185d998`. The existing canonical QA diagnostic build for the real click retest is preserved, distinguishing source removal from the state of the installed test bundle. After removing diagnostics, the main verifier ran full verification from the project root at `185d998`. The doc author directly confirmed in `.dryforge/resume-integrated-verify.log` the 2026-09-28 21:44 run with 114 Swift and 0 failures, 9 Python OK, EXIT 0 for all three stages, and INTEGRATED_EXIT 0. It includes release bundle and signature verification. The drop from 116 to 114 is due to removing 2 tests dedicated to temporary diagnostics. At the time of this integrated verification, real click success was unconfirmed, and the scope of later confirmation is recorded below.
+
+
+### Cold Click Screen Display Confirmation and Warm Click Progress
+
+In a follow-up cold click, the user confirmed that clicking the existing reminder opens the view. Before the main verifier's GUI interaction, step diagnostics for QA PID 41981 recorded launch → responseWithToken → routeBegin/showRequested → showFailed → routeHighlighted → waitingAnchor ×2 → showSucceeded → popoverDidShow. Display succeeded about 0.41 seconds after the request, and closeRequested was recorded about 4 seconds later. One canonical QA and the existing normal app PID 61441 remained. This is evidence of launch and screen display from a real OS click. routeHighlighted is model state, so it is not extended to confirming the target date and row highlight on the real screen.
+
+The warm click retest was prepared with one reminder at 2026-09-28 21:56 KST. After saving a 20 hours 16 minutes before entry in the UI, the same executable's report showed pending=1, fire time 2026-09-28T21:56:00+09:00, delivered=0. The calendar was returned to today and closed with Escape while keeping the QA process. After 21:56 the same executable's report was exit 0, pending=0, delivered=1, but there was no new responseWithToken. At this point only the delivered list was confirmed, and the user click and cleanup verification were pending. Later results follow below.
+
+
+### Warm Click Confirmation and Real Reminder Cleanup on Final Code
+
+Asked to confirm navigation to September 29 and row highlight after the warm click, the user answered "Yep, confirmed" (translated from Korean). Before the main verifier's GUI reselection, the same QA PID 41981 recorded responseWithToken → routeBegin → showSucceeded → routeHighlighted → popoverDidShow, with no process relaunch. The warm click's date and highlight rest on both user observation and diagnostics. The earlier cold click confirmation covers user-observed screen display and step diagnostics, and is not extended to confirming the cold target date and highlight on the real screen.
+
+After the click test, QA PID 41981 was terminated, and the 600-second watchdog session 64060 ended with exit 0, QA_PROCESS_ABSENT. The executable of canonical `build/CalendarBarRuntimeQA.app` was replaced with the final diagnostics-removed `build/CalendarBar.app` executable, and ad-hoc signing and signature verification exit 0 were confirmed. No other QA copies were created and the in-use install's files were not changed. Then the final code's real screen and OS schedule cleanup were verified with `scripts/run_qa.py`'s 600-second limit and the `--qa --qa-notifications --qa-window` options.
+
+| Real action | UI and same-executable OS query result |
 |---|---|
-| 시간 알림 20시간 0분 전 저장 → 알림 끄기 | UI 예약 1·pending/delivered 1/0 → UI 0·OS 0/0 |
-| 20시간 8분 전(22:04)과 19시간 전 저장 | OS 2/0 → 22:04 이후 1/1 |
-| 내용 숨김 켜기 | OS 1/1 → 1/0: 남은 예약 유지·표시 알림 제거 |
-| QA 샘플 캘린더 선택 해제 → 재선택 | UI 0·OS 0/0 → UI 1·OS 1/0 |
-| 시스템 설정에서 Runtime QA 알림 허용만 끄고 앱에서 예약 다시 확인 | UI 권한 필요·예약 0, authorization=1·alert=2·pending/delivered 0/0 |
+| Save timed reminder 20 hours 0 minutes before → turn reminder off | UI scheduled 1·pending/delivered 1/0 → UI 0·OS 0/0 |
+| Save 20 hours 8 minutes before (22:04) and 19 hours before | OS 2/0 → after 22:04 1/1 |
+| Turn content hiding on | OS 1/1 → 1/0: remaining schedule kept, displayed reminder removed |
+| Deselect → reselect QA sample calendar | UI 0·OS 0/0 → UI 1·OS 1/0 |
+| Turn off only Runtime QA notification permission in System Settings and recheck schedules in the app | UI permission needed·scheduled 0, authorization=1·alert=2·pending/delivered 0/0 |
 
-내용 숨김을 false로 복원하고 해당 규칙을 껐으며 QA launch notifications=false를 저장했다. 저장된 활성 규칙 수 0과 hide=false를 확인했다. 이 확인용 보조 스크립트는 설정 구조를 가정한 두 번의 실행에 실패했으나 `ReminderSettings` 소스를 읽고 재귀 집계로 활성 규칙 0을 확인했다. 이는 점검 스크립트의 실패이며 제품 저장 실패로 기록하지 않는다.
+Content hiding was restored to false, that rule was turned off, and QA launch notifications=false was saved. Stored active rule count 0 and hide=false were confirmed. The helper script for this check failed in two runs that assumed the settings structure, but after reading the `ReminderSettings` source, active rules 0 was confirmed by recursive counting. This is a failure of the check script and is not recorded as a product save failure.
 
-Cmd-Q로 QA가 종료되지 않아 정확한 QA 실행 경로의 PID에 SIGTERM을 보냈다. 제한 실행 세션 39609는 exit 0, QA_PROCESS_ABSENT로 종료됐으며 최종 읽기 보고에서 OS pending/delivered 0/0을 확인했다. 시험용 알림 허용은 원래 꺼짐으로 복원했다. 원본 일정·실사용 설치본 파일·로그인 항목·다른 앱 권한은 변경하지 않았다.
+QA did not quit with Cmd-Q, so SIGTERM was sent to the PID at the exact QA executable path. Time-limited run session 39609 ended with exit 0, QA_PROCESS_ABSENT, and the final read report confirmed OS pending/delivered 0/0. Test notification permission was restored to its original off. Source events, in-use install files, login items, and other apps' permissions were not changed.
 
-이번 실제 권한 시험은 시스템 알림 허용의 회수다. 합성 캘린더 backend를 사용했으므로 실제 Calendar fullAccess 회수 검증은 수행하지 않았다. 최초 알림 권한 요청 오류 원인, 실제 계정의 분리된 반복 예외 조합, macOS 14 실행, 재로그인·재부팅 지속성은 제한으로 유지한다. 소스는 앞서 전체 검증한 `185d998`과 같으며 Swift 114개·Python 9개·전체 exit 0 기록을 동일 소스의 근거로 사용한다. 이번 후속 변경은 문서뿐이므로 링크·참조와 diff를 검사했으며 새 전체 테스트 실행으로 보고하지 않는다.
+This real permission test is a revocation of system notification permission. Because the synthetic calendar backend was used, real Calendar fullAccess revocation was not verified. The cause of the initial notification permission request error, real-account detached recurring override combinations, macOS 14 execution, and re-login/reboot persistence remain limitations. The source is the same as `185d998`, fully verified earlier, and the 114 Swift·9 Python·overall exit 0 record is used as evidence for the same source. This follow-up change is docs-only, so links, references, and diffs were checked, and it is not reported as a new full test run.
 
 
-### main 병합과 실사용 설치본 교체
+### Merge to main and In-Use Install Replacement
 
-2026-09-28 사용자가 main 병합과 실사용 앱 교체를 승인했다. origin/main의 `1a65f57` README 제목 수정은 기능 브랜치에 충돌 없이 보존·통합했고 main에는 no-ff merge `1503248`로 반영했다. 제품 코드는 `f0f7d79`와 같아 앞선 Swift 114개·Python 9개·전체 exit 0의 동일 소스 검증을 유지한다. 원격 push는 수행하지 않았다.
+On 2026-09-28 the user approved merging to main and replacing the in-use app. origin/main's `1a65f57` README title edit was preserved and integrated into the feature branch without conflict, and landed on main as no-ff merge `1503248`. Product code is identical to `f0f7d79`, so the earlier same-source verification of 114 Swift·9 Python·overall exit 0 still holds. No remote push was performed.
 
-기존 `/Users/ian/Applications/CalendarBar.app`은 `.dryforge/backup/CalendarBar-before-reminders-20260928-221151.zip`에 권한 0600으로 백업했다. 기존 정상 앱 PID 61441을 정상 종료한 뒤 검증된 빌드로 교체했고, 빌드 실행 파일과 설치 실행 파일의 SHA-256 내부 동등성 true 및 codesign 검증 exit 0을 확인했다. 정리된 환경으로 open 실행 후 새 정상 앱 PID 66871 한 개가 실행됐다.
+The existing `/Users/ian/Applications/CalendarBar.app` was backed up to `.dryforge/backup/CalendarBar-before-reminders-20260928-221151.zip` with permissions 0600. The existing normal app PID 61441 was quit normally and replaced with the verified build, and internal SHA-256 equality true between built and installed executables and codesign verification exit 0 were confirmed. After launching with open in a clean environment, exactly one new normal app PID 66871 ran.
 
-ControlCenter 로그는 PID 66871만 필터링한 JSON에서 메타데이터를 확인했다. tracking 1·displayableCreated 1·itemAdded 1·blocked 0, 조회 exit 0이었다. 이는 새 설치본의 실행과 메뉴 등록 증거이며 개인 일정 화면·캘린더 권한 유지 확인과는 구별한다. 개인 일정 화면은 조회하지 않았다. 앞서 명시한 실제 계정 반복 예외·실제 캘린더 권한 회수·최초 알림 권한 요청 원인·macOS 14·재로그인 등의 한계는 유지한다. 이번 갱신은 설치 결과 문서화이며 문서 링크·diff를 확인했다.
+ControlCenter logs were checked for metadata in JSON filtered to PID 66871 only: tracking 1·displayableCreated 1·itemAdded 1·blocked 0, query exit 0. This is evidence of the new install's launch and menu registration, distinct from checking the personal event view or calendar permission retention. The personal event view was not queried. The previously stated limitations (real-account recurring overrides, real calendar permission revocation, the cause of the initial notification permission request, macOS 14, re-login, etc.) remain. This update documents the install result, and doc links and diffs were checked.
 
-2026-09-29 앱 아이콘 추가 후 `python3 scripts/verify.py` 전체 exit 0을 확인했다. `NSWorkspace.icon(forFile:)`로 빌드·설치본 번들의 아이콘을 렌더해 새 디자인이 해석되고 macOS 26의 회색 판 덧씌움이 없음을 확인했다. 설치본은 기존 PID 66871을 정상 종료 후 교체했고 실행 파일·아이콘의 SHA-256이 빌드와 같고 codesign 검증 exit 0, 재실행 PID 89114 한 개와 직후 1분 ControlCenter blocked 0을 확인했다. 알림 배너·로그인 항목의 실제 아이콘 표시와 개인 일정 화면은 확인하지 않았다.
+On 2026-09-29, after adding the app icon, full `python3 scripts/verify.py` exit 0 was confirmed. Rendering the built and installed bundles' icons with `NSWorkspace.icon(forFile:)` confirmed the new design resolves and macOS 26's gray plate overlay is absent. The install was replaced after quitting the existing PID 66871 normally; the executable and icon SHA-256 matched the build, codesign verification exit 0, exactly one relaunched PID 89114, and ControlCenter blocked 0 in the minute immediately after were confirmed. Actual icon display in reminder banners and login items, and the personal event view, were not checked.

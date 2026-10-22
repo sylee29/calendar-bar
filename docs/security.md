@@ -1,17 +1,17 @@
-# 권한과 개인정보
+# Permissions and Privacy
 
-사용자의 시스템 캘린더와 계정 정보가 보호 대상이다. 구글 인증·토큰 보관·갱신·폐기는 macOS 계정 설정이 담당한다. 앱 자체가 비밀번호나 인증 토큰을 수집하지 않는다.
+The user's system calendars and account information are protected. Google authentication and token storage, refresh, and revocation are handled by macOS account settings. The app itself does not collect passwords or authentication tokens.
 
-| 주체 | 조건 | 허용 동작 | 금지 동작 |
+| Actor | Condition | Allowed | Forbidden |
 |---|---|---|---|
-| 앱 | 일정 전체 접근 허용 및 캘린더 선택 | 선택한 일정 읽기 | 일정·캘린더 쓰기 |
-| 앱 | 미요청·거절·제한·쓰기 전용 권한 | 날짜 달력과 연결 안내 | 개인 일정 표시 |
-| 사용자 | 앱 설정 | 표시 캘린더·로그인 실행 변경 | 앱을 통한 일정 편집 |
+| App | Full event access granted and calendars selected | Read selected events | Write events or calendars |
+| App | Not requested, denied, restricted, or write-only permission | Date calendar and connection guidance | Show personal events |
+| User | App settings | Change displayed calendars and launch at login | Edit events through the app |
 
-전체 접근이라는 시스템 권한 이름을 읽기 전용 권한이라고 바꾸어 설명하지 않는다. 앱의 동작만 읽기로 제한한다. 권한 변경 후 조회 결과 게시 직전 권한을 다시 확인하고 권한을 잃은 이전 내용을 제거한다.
+Do not describe the system permission named full access as a read-only permission. Only the app's behavior is limited to reading. After a permission change, recheck permission right before publishing query results and remove previous content whose permission was lost.
 
-앱은 선택 ID와 최초 로그인 등록 시도 여부, 앱 알림의 식별자·발생 기준·트리거·기본값·내용 숨김 설정을 저장한다. 알림 설정은 원자적으로 교체하며 제목은 저장하지 않는다. 메뉴막대 위치는 AppKit이 별도로 저장한다. 일정 원문·제목·계정 주소·credential을 로그나 문서에 남기지 않는다. 분석 SDK와 외부 전송은 없다. 검증 기록에는 명령, 종료 코드, 비식별 통과 여부만 기록한다. 권한 요청 성공 여부, 상태 변경, 실패는 UI 상태로 전달하며 별도 개인 활동 감사 로그를 만들지 않는다.
+The app stores selected IDs, whether initial login registration was attempted, and reminders' identifiers, occurrence basis, triggers, defaults, and content-hiding setting. Reminder settings are replaced atomically and titles are not stored. Menu bar position is stored separately by AppKit. Raw event content, titles, account addresses, and credentials are never written to logs or docs. There is no analytics SDK and no external transmission. Verification records contain only commands, exit codes, and non-identifying pass/fail. Permission request success, state changes, and failures are conveyed as UI state, and no separate personal activity audit log is created.
 
-OS 알림에는 기본적으로 일정 제목과 시각이 들어간다. 내용 숨기기를 켜면 일반 안내로 바꾸고 기존 전달 알림도 정리한다. 앱이 실행 중일 때 권한 회수·선택 해제를 감지하면 관련 대기·전달 알림을 제거한다. 앱이 완전히 종료된 동안에는 이를 감지할 수 없어 이전 제목이 남을 수 있으며 사용자가 이 제한을 수용했다. 읽기 실패는 삭제 증거가 아니지만 끄기·숨기기 등 명시적 의도는 조회 실패 중에도 적용한다. 설정 파일이 손상되어 소유 대응을 신뢰할 수 없으면 파일을 보존하고 앱 소유 알림을 정리한다. 다른 앱의 알림은 건드리지 않는다.
+OS reminders include the event title and time by default. Turning on content hiding replaces them with generic text and also cleans up already delivered reminders. When the app detects permission revocation or deselection while running, it removes related pending and delivered reminders. While the app is fully quit it cannot detect this, so an old title may remain; the user accepted this limitation. A read failure is not evidence of deletion, but explicit intents such as turning off or hiding apply even during query failures. If the settings file is corrupted and ownership mapping cannot be trusted, the file is preserved and app-owned reminders are cleaned up. Other apps' notifications are never touched.
 
-실제 알림 QA는 `.qa` 번들 식별자와 합성 일정·독립 저장소만 사용한다. 알림 클릭으로 인자가 없는 재실행이 되어도 시스템 일정·로그인 항목에 접근하지 않는다. 검증용 조회 출력은 앱 소유 요청 식별자와 예약 시각·상태만 포함한다.
+Real reminder QA uses only the `.qa` bundle identifier, synthetic events, and an independent store. Even if a reminder click causes an argument-less relaunch, it does not access system events or login items. Verification query output includes only app-owned request identifiers, scheduled times, and status.

@@ -1,13 +1,13 @@
 # CalendarUI
 
-달력·일정·설정 화면 및 사용자 입력을 담당한다.
+Owns the calendar, event, and settings screens and user input.
 
-Core 날짜를 화면의 기준으로 삼는다. 드래그와 날짜 클릭을 중복 처리하지 않고 목록 스크롤에 월 이동 제스처를 붙이지 않는다. 연결 실패와 빈 일정을 구별한다.
+Use Core dates as the basis for the screen. Don't handle a drag and a date click twice, and don't attach the month-change gesture to list scrolling. Distinguish connection failures from no events.
 
-EventKit 객체 직접 접근·일정 수정·프로세스 진입은 소유하지 않는다.
+Does not own direct EventKit object access, event editing, or process entry.
 
-월말 이동·제스처 경계·연속 탐색 모델을 자동 테스트하고 실제 4/5/6주 화면 및 클릭/드래그를 확인한다.
+Automatically test month-end navigation, gesture boundaries, and the continuous navigation model, and check real 4/5/6-week screens and clicks/drags.
 
-검색 결과 본문은 현재 발생분 시작일로 이동하고 종 버튼은 독립 편집을 연다. 알림 클릭은 일반 재열기의 오늘 초기화보다 우선한다. 설정 의도와 실제 예약·보류·권한 필요·부분 실패를 구별한다. 기본값 복사와 반복 개별 예외를 UI 모델에서 검증하고 시스템 알림 API는 알림 모듈을 통한다. QA는 실제 화면 컴포넌트에 합성 backend를 주입하며 일반 smoke는 OS 알림을 예약하지 않는다.
+A search result's body navigates to the current occurrence's start date, and the bell button opens a standalone editor. A reminder click takes precedence over the reset-to-today of a normal reopen. Distinguish configured intent from actually scheduled, deferred, permission required, and partial failure. Verify default-time copying and recurring per-event exceptions in the UI model; system notification APIs go through the notifications module. QA injects a synthetic backend into the real screen components, and the regular smoke run doesn't schedule OS notifications.
 
-반복 알림 draft는 개별 편집과 앞으로 편집의 anchor를 구별하고 앞으로 경계는 기존 시리즈 표현을 따른다. 저장 규칙의 발생분 정체성이 모호하면 저장 가능한 anchor를 만들지 않는다. 개별 설정 해제는 저장된 예외의 identity·anchor를 사용하며 현재 표시 형식으로 재계산하지 않는다.
+Recurring reminder drafts distinguish the anchors of per-event edits and future-events edits, and future-events boundaries follow the existing series representation. If the occurrence identity under the storage rules is ambiguous, don't create a savable anchor. Clearing a per-event override uses the stored exception's identity and anchor and does not recompute from the current display form.

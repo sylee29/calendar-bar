@@ -1,13 +1,13 @@
 # CalendarCore
 
-날짜 격자·선택 상태·읽기 전용 일정 값·제목 검색·날짜별 예정 목록·알림 규칙을 담당한다.
+Owns the date grid, selection state, read-only event values, title search, per-date upcoming lists, and reminder rules.
 
-Gregorian과 주입 시간대를 사용한다. 월 이동은 현재 선택 일자를 말일에 맞춘다. 날짜 더하기 후 하루 시작을 정규화한다.
+Use Gregorian with an injected time zone. Month navigation clamps the current selected day to the month's last day. Normalize to the start of day after adding dates.
 
-UI·EventKit·로컬 설정을 참조하지 않는다.
+Does not reference UI, EventKit, or local settings.
 
-윤년·연말·DST 자정 건너뛰기·반복 발생분·0길이·자정 종료를 테스트한다.
+Test leap years, year end, DST skipped midnight, recurring occurrences, zero length, and events ending at midnight.
 
-알림 발생 기준과 현재 시작일을 구별한다. 시간 간격은 절대시각에서 빼고 종일 기준은 civil date로 계산한다. 중복 트리거·과거 알림·DST 없는/중복 시각·반복 앞으로 규칙과 개별 예외를 테스트한다. 시스템 예약과 파일 저장은 소유하지 않는다.
+Distinguish the reminder's occurrence basis from the current start date. Subtract time offsets from the absolute instant, and compute all-day bases by civil date. Test duplicate triggers, past reminders, nonexistent/repeated DST times, and recurring future-events rules with per-event exceptions. Does not own system scheduling or file storage.
 
-원래 발생분의 instant·civil 근거를 현재 표시 형식과 구별한다. 날짜 근거의 충돌은 확인 필요로 남기되 정확한 개별 예외를 우선한다. 앞으로 규칙은 같은 시리즈의 기존 anchor 종류를 계승하고 혼합 경계 교체를 거절한다. 시간↔종일 전환·같은 날짜 다중 발생·첫 경계 이전 편집을 테스트한다.
+Distinguish the original occurrence's instant and civil basis from the current display form. Leave date-basis collisions as needs confirmation, but give precedence to an exact per-event exception. A future-events rule inherits the existing anchor kind of the same series and rejects replacing a mixed boundary. Test timed↔all-day switches, multiple occurrences on the same date, and edits before the first boundary.

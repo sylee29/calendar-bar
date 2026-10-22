@@ -59,7 +59,7 @@ extension MenuBarController: CalendarPresenting {}
         menu.onUserOpen = { [weak self] in self?.clearNotificationIntent() }
         if qa && qaWindow {
             let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 340, height: 600), styleMask: [.titled, .closable], backing: .buffered, defer: false)
-            window.title = "Calendar Bar · 합성 데이터 QA"
+            window.title = "Calendar Bar · Synthetic Data QA"
             window.contentViewController = NSHostingController(rootView: CalendarPopover(model: model, login: login))
             window.isReleasedWhenClosed = false
             window.center(); window.makeKeyAndOrderFront(nil)

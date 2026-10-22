@@ -1,11 +1,11 @@
-# 변경과 검증 기준
+# Change and Verification Standards
 
-Swift Package의 모듈 경계를 지킨다. CalendarCore는 Foundation 계산만, CalendarAccess는 CalendarCore와 시스템 일정 API, CalendarNotifications는 CalendarCore·CalendarAccess와 시스템 알림 API, MenuBar는 메뉴막대와 로그인 항목, CalendarUI는 이 네 모듈, CalendarBar는 앱 진입만 소유한다. Core에 UI나 EventKit 객체를 넣지 않는다.
+Respect Swift Package module boundaries. CalendarCore owns only Foundation calculations, CalendarAccess owns CalendarCore and the system event API, CalendarNotifications owns CalendarCore·CalendarAccess and the system notification API, MenuBar owns the menu bar and login items, CalendarUI owns these four modules, and CalendarBar owns only app entry. Do not put UI or EventKit objects in Core.
 
-일정 조회 API는 읽기만 노출한다. EventKit 객체를 actor 밖에 전달하지 않고 값으로 변환한다. UI 게시 상태는 main actor에서 변경하며 오래된 비동기 응답을 현재 결과로 채택하지 않는다. 새 외부 의존성은 플랫폼 기본 기능으로 해결할 수 없는 근거가 있을 때만 도입한다.
+The event query API exposes only reads. EventKit objects are not passed outside the actor; they are converted to values. UI-published state changes on the main actor, and stale async responses are never adopted as the current result. Introduce a new external dependency only with evidence that platform built-ins cannot solve the problem.
 
-`python3 scripts/verify.py`가 전체 테스트와 release 앱 빌드·서명 검증을 실행한다. 코드 변경 후 이 명령의 exit 0을 확인한다. 날짜/권한/비동기 경계 변경은 실제 경계를 검증하는 테스트를 포함한다. 화면 동작 변경은 실제 앱에서 확인하고 모의 데이터 통과를 실제 계정 연동 성공으로 보고하지 않는다.
+`python3 scripts/verify.py` runs all tests and the release app build and signature verification. After code changes, confirm this command exits 0. Date/permission/async boundary changes include tests that verify the real boundary. UI behavior changes are checked in the real app, and passing with mock data is not reported as real-account integration success.
 
-프로세스는 `scripts/run.py` 등 제한 시간과 종료 처리를 갖춘 실행으로 검증한다. 로그아웃·재부팅을 검증 명목으로 임의 수행하지 않는다. push·공개 배포는 사용자 승인 없이 하지 않는다. 작업 전 Git 변경을 확인하고 다른 작업자의 파일을 되돌리지 않는다.
+Verify processes with runs that have time limits and exit handling, such as `scripts/run.py`. Do not log out or reboot arbitrarily in the name of verification. Do not push or publish without user approval. Check Git changes before working and do not revert other workers' files.
 
-검색·예정 일정·알림 조회가 서로 결과를 덮어쓰지 않도록 채널과 요청 세대를 구별한다. 알림 권한 허용이나 저장 성공만으로 예약 성공을 표시하지 않고 시스템 대기 요청과 대조한다. 실패를 일정 삭제로 취급하거나 제목을 반복 일정 식별자로 사용하지 않는다. 실제 알림 검증은 합성 일정과 별도 QA 번들에서 수행하며 일반 smoke 실행은 OS 알림을 변경하지 않는다.
+Separate channels and request generations so search, Upcoming, and reminder queries do not overwrite each other's results. Do not show scheduling success from notification permission or save success alone; match against system pending requests. Never treat a failure as event deletion or use a title as a recurring-event identifier. Real reminder verification is done with synthetic events in a separate QA bundle, and a normal smoke run does not change OS notifications.

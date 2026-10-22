@@ -12,7 +12,7 @@ enum MonthSwipe {
     }
 }
 
-enum CalendarTab: String, CaseIterable { case calendar = "달력", upcoming = "예정 일정" }
+enum CalendarTab: String, CaseIterable { case calendar = "Calendar", upcoming = "Upcoming" }
 
 @Observable @MainActor final class CalendarModel {
     private(set) var tab: CalendarTab = .calendar
@@ -159,10 +159,10 @@ enum CalendarTab: String, CaseIterable { case calendar = "달력", upcoming = "�
         guard revision == navigationRevision else { return }
         switch result {
         case .found(let current): goToResolvedOccurrence(current)
-        case .connectionRequired: navigationMessage = "캘린더 접근이 허용되지 않았습니다."
-        case .failed: navigationMessage = "일정을 확인하지 못했습니다. 다시 시도해 주세요."
+        case .connectionRequired: navigationMessage = "Calendar access isn't allowed."
+        case .failed: navigationMessage = "Couldn't check the event. Please try again."
         default:
-            navigationMessage = "더 이상 표시할 수 없는 일정입니다."
+            navigationMessage = "This event can no longer be shown."
             if isSearching { // Refresh without replacing the resolution message.
                 let message = navigationMessage
                 scheduleSearch()
@@ -205,12 +205,12 @@ enum CalendarTab: String, CaseIterable { case calendar = "달력", upcoming = "�
             guard editingID == reminderEditingID else { return }
             guard canDisplayReminder else { clearInaccessibleEditor(); return }
             guard case .found(let current) = result else {
-                reminderError = "현재 일정을 확인하지 못했습니다. 캘린더를 새로고침한 뒤 다시 시도해 주세요."
+                reminderError = "Couldn't verify the current event. Refresh the calendar and try again."
                 return
             }
             guard current.isAllDay == draft.event.isAllDay else {
                 editReminder(current)
-                reminderError = "일정 형식이 변경되었습니다. 새 알림 시간을 확인한 뒤 다시 저장해 주세요."
+                reminderError = "The event format changed. Review the new reminder times and save again."
                 return
             }
             let rule = try draft.rule(enabled: enabled)
@@ -219,7 +219,7 @@ enum CalendarTab: String, CaseIterable { case calendar = "달력", upcoming = "�
             clearInaccessibleEditor()
             // Keep the editor open so actual delivery state and permission failures stay visible.
             if editingID == reminderEditingID && canDisplayReminder { editReminder(draft.event) }
-        } catch { if editingID == reminderEditingID && canDisplayReminder { reminderError = "저장하지 못했습니다. 숫자와 알림 시간을 확인하고 다시 시도해 주세요." } }
+        } catch { if editingID == reminderEditingID && canDisplayReminder { reminderError = "Couldn't save. Check the numbers and reminder times, then try again." } }
     }
     func resumeInheritedReminder() async {
         guard !reminderBusy, let reminders, let draft = reminderDraft, let existing = draft.existing, existing.scope == .thisOccurrence, canDisplayReminder else { return }
@@ -229,7 +229,7 @@ enum CalendarTab: String, CaseIterable { case calendar = "달력", upcoming = "�
         do {
             try await reminders.removeOverride(identity: existing.identity, anchor: existing.anchor)
             if editingID == reminderEditingID && canDisplayReminder { editReminder(draft.event) }
-        } catch { if editingID == reminderEditingID && canDisplayReminder { reminderError = "개별 설정을 해제하지 못했습니다. 다시 시도해 주세요." } }
+        } catch { if editingID == reminderEditingID && canDisplayReminder { reminderError = "Couldn't clear the override. Please try again." } }
     }
     func routeReminder(token: String) async {
         cancelReminder()
@@ -237,11 +237,11 @@ enum CalendarTab: String, CaseIterable { case calendar = "달력", upcoming = "�
         let revision = navigationRevision
         presentationID = UUID()
         showingSettings = false
-        navigationMessage = "일정을 확인하는 중…"
+        navigationMessage = "Checking event…"
         isResolvingReminder = true
         defer { if revision == navigationRevision { isResolvingReminder = false } }
         guard let link = reminders?.clickLink(token: token) else {
-            navigationMessage = "이 알림의 일정을 확인할 수 없습니다. 캘린더에서 다시 찾아 주세요."
+            navigationMessage = "Can't find the event for this reminder. Look it up in your calendar again."
             return
         }
         let start: Date
@@ -254,17 +254,17 @@ enum CalendarTab: String, CaseIterable { case calendar = "달력", upcoming = "�
         guard revision == navigationRevision else { return }
         switch result {
         case .found(let event): goToResolvedOccurrence(event)
-        case .connectionRequired: navigationMessage = "캘린더 접근을 허용한 뒤 다시 확인해 주세요."
-        case .outsideSelectedScope: navigationMessage = "선택하지 않은 캘린더의 일정입니다. 설정에서 캘린더를 선택해 주세요."
-        case .needsConfirmation: navigationMessage = "일정의 연결을 확인해야 합니다. 검색으로 다시 찾아 주세요."
-        case .failed: navigationMessage = "일정을 확인하지 못했습니다. 다시 시도해 주세요."
-        case .missing, .outsideQuery: navigationMessage = "현재 확인할 수 없는 일정입니다. 캘린더에서 다시 찾아 주세요."
+        case .connectionRequired: navigationMessage = "Allow calendar access, then check again."
+        case .outsideSelectedScope: navigationMessage = "This event is in a calendar that isn't selected. Select the calendar in Settings."
+        case .needsConfirmation: navigationMessage = "This event's link needs confirmation. Find it again with search."
+        case .failed: navigationMessage = "Couldn't check the event. Please try again."
+        case .missing, .outsideQuery: navigationMessage = "This event can't be found right now. Look it up in your calendar again."
         }
     }
     func waitForRefresh() async { await refreshTask?.value }
     func formatted(_ date: Date, _ format: String) -> String {
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "ko_KR")
+        formatter.locale = Locale(identifier: "en_US")
         formatter.calendar = calendar.context.calendar
         formatter.timeZone = calendar.context.calendar.timeZone
         formatter.dateFormat = format
@@ -274,8 +274,8 @@ enum CalendarTab: String, CaseIterable { case calendar = "달력", upcoming = "�
         EventIndex.events(on: calendar.selectedDate, in: access.events, context: calendar.context)
     }
     func timeLabel(_ event: EventOccurrence) -> String {
-        if event.isAllDay { return event.start < calendar.selectedDate ? "종일 · 진행 중" : "종일" }
-        if event.start < calendar.selectedDate { return "진행 중" }
+        if event.isAllDay { return event.start < calendar.selectedDate ? "All day · In progress" : "All day" }
+        if event.start < calendar.selectedDate { return "In progress" }
         return formatted(event.start, "a h:mm")
     }
 }

@@ -1,33 +1,33 @@
-# 날짜와 일정 규칙
+# Date and Event Rules
 
-오늘과 선택일은 서로 다르다. 오늘은 시스템 시간대의 현재 날짜이며, 선택일은 일정 목록의 기준이다. 팝오버를 열거나 오늘 버튼을 누르면 둘이 오늘로 모인다. 자정·시간대 변경만으로 탐색 중인 날짜를 초기화하지 않는다.
+Today and the selected date are distinct. Today is the current date in the system time zone; the selected date is the basis of the event list. Opening the popover or pressing the "Today" button brings both to today. A midnight or time zone change alone does not reset the date being browsed.
 
-양력 월간 격자는 일요일부터 토요일까지 완전한 주를 표시한다. 인접 월 날짜도 표시하고 선택하면 해당 월로 이동한다. 월 이동은 현재 선택일의 일자를 유지하며 없는 날짜는 말일로 보정한다. 1/31→2/28→3/28이 된다. 원래 31일을 숨겨서 복원하지 않는다.
+The Gregorian monthly grid shows complete weeks from Sunday to Saturday. Adjacent-month dates are shown, and selecting one moves to that month. Month navigation keeps the selected date's day of month and clamps nonexistent dates to the last day of the month. 1/31→2/28→3/28. The original 31st is not hidden and restored.
 
-왼쪽 드래그는 다음 달, 오른쪽은 이전 달이며 한 번 놓을 때 한 달만 이동한다. 가로 이동이 세로보다 크고 40pt를 넘어야 한다. 드래그 중에는 이전·현재·다음 달이 손 움직임을 따라 이동하며, 놓으면 0.24초 동안 이동을 마무리한다. 짧은 드래그는 원위치로 돌아온다. 전환이 끝난 뒤에만 선택 월과 일정 조회를 바꾸며 전환 중 중복 입력은 무시한다. 목록 세로 스크롤은 월 이동이 아니다. 동작 줄이기 설정에서는 전환 애니메이션을 생략한다.
+Dragging left goes to the next month, right to the previous month, and each release moves only one month. Horizontal movement must exceed vertical movement and be over 40pt. During a drag the previous, current, and next months follow the pointer; on release the move finishes over 0.24 seconds. A short drag snaps back. The selected month and event query change only after the transition finishes, and duplicate input during a transition is ignored. Vertical list scrolling is not month navigation. With Reduce Motion enabled, the transition animation is skipped.
 
-선택 캘린더의 일정이 있는 날은 캘린더별 색 점을 표시한다. 같은 이름이라도 다른 캘린더는 별개다. 일정은 시작 포함·종료 제외이며 자정 종료가 다음 날까지 이어지지 않는다. 0길이 일정은 시작일에만 속한다. 반복 일정의 각 발생분은 별개다.
+Days with events in the selected calendars show a colored dot per calendar. Different calendars are distinct even with the same name. Events are start-inclusive and end-exclusive; an event ending at midnight does not extend into the next day. A zero-length event belongs only to its start date. Each occurrence of a recurring event is distinct.
 
-종일 일정 우선, 이후 시작 시각·제목·식별자 순으로 정렬한다. 이전 날 시작한 시간 일정은 진행 중, 여러 날 종일 일정은 종일 · 진행 중으로 표시한다. 제목이 없으면 '(제목 없음)'이다. 정상 조회 0건만 일정 없음이며 권한 부족·미선택·실패는 각각 따로 표시한다.
+Sort all-day events first, then by start time, title, and identifier. A timed event that started on a previous day shows "In progress"; a multi-day all-day event shows "All day · In progress". A missing title shows "(No title)". Only a successful query with 0 results shows "No events"; insufficient permission, no selection, and failure are each shown separately.
 
-창 바깥 클릭은 팝오버만 닫는다. 앱 종료는 별도 명시 동작이다. 로그인 실행을 사용자가 끈 뒤 다음 실행에서 자동으로 다시 켜지 않는다.
+Clicking outside the window closes only the popover. Quitting the app is a separate explicit action. Once the user turns off launch at login, it is not automatically turned back on at the next launch.
 
-## 검색과 예정 일정
+## Search and Upcoming
 
-검색은 선택 캘린더의 제목에만 적용하며 기본 기간은 오늘 기준 앞뒤 1년이다. 시작·종료일은 편집할 수 있고 종료일 하루를 포함한다. 잘못된 기간·검색 0건·조회 실패는 서로 다른 상태다. 결과의 본문을 누르면 그 발생분의 현재 시작일이 속한 월과 날짜로 이동하고 해당 행을 스크롤·강조한다. 종 버튼은 날짜 이동과 별개로 알림 편집을 연다.
+Search applies only to titles in the selected calendars, with a default range of one year before and after today. Start and end dates are editable, and the end date's full day is included. An invalid range, 0 search results, and a query failure are distinct states. Clicking a result's body moves to the month and date containing that occurrence's current start date and scrolls to and highlights that row. The bell button opens reminder editing, separate from date navigation.
 
-예정 일정은 오늘 하루 전체부터 30일을 날짜별로 보여 주므로 오늘 이미 지난 일정도 포함한다. 여러날 일정은 걸치는 각 날짜에 나온다. 더 보기는 30일씩 늘리고 세로 스크롤은 월 이동으로 해석하지 않는다. 일반 메뉴 열기는 오늘·기본 기간으로 돌아가 검색을 지운다. 알림으로 열 때는 알림 목적 날짜가 우선한다.
+Upcoming shows 30 days by date starting from the whole of today, so it includes events already past today. Multi-day events appear on each date they span. "Show 30 more days" extends by 30 days at a time, and vertical scrolling is not interpreted as month navigation. A normal menu open returns to today and the default range and clears search. When opened from a reminder, the reminder's target date takes precedence.
 
-## 앱 알림
+## App Reminders
 
-일정마다 사용자가 직접 켜야 예약한다. 시간 일정 기본값은 60분·10분 전, 종일 일정은 전날 21시이며 변경할 수 있다. 기본값 적용은 편집 중인 일정으로 복사하는 동작이고 이후 변경은 기존 일정에 소급하지 않는다. 여러 시간을 추가·삭제할 수 있으며 중복은 합친다. 시간 일정은 양수 분 간격, 종일 일정은 며칠 전과 현지 시각으로 정한다. 이미 지난 알림 시각은 예약하지 않는다.
+A reminder is scheduled only after the user turns it on for each event. Defaults are 60 and 10 minutes before for timed events and 21:00 the day before for all-day events, and can be changed. Applying defaults copies them into the event being edited; later changes do not apply retroactively to existing events. Multiple times can be added and removed, and duplicates are merged. Timed events use positive minute offsets; all-day events use days before and a local time. Reminder times already past are not scheduled.
 
-반복 일정은 이번 발생분만 또는 이 일정부터 앞으로 적용한다. 앞으로 규칙을 바꿔도 명시적인 개별 예외는 유지하며 개별 설정 해제로 다시 반복 규칙을 따른다. 같은 제목으로 반복 관계를 추정하지 않는다. 발생분을 안전하게 식별하지 못하면 그 발생분의 위험한 예약만 취소하고 확인을 요청하며 다른 발생분의 안전한 예약은 보존한다.
+Recurring events apply to "This event only" or "This and future events". Changing the future rule keeps explicit per-event overrides, and "clear override" makes the occurrence follow the recurring rule again. Recurrence relationships are not inferred from identical titles. If an occurrence cannot be safely identified, only that occurrence's unsafe schedules are canceled and confirmation is requested; safe schedules for other occurrences are preserved.
 
-반복 발생분의 원래 시각과 원래 현지 날짜는 현재의 시간·종일 표시 형식과 별개로 식별 근거를 유지한다. 저장된 날짜 기준이 같은 시리즈의 여러 발생분과 겹치면 확인 필요로 남기고 모호한 기준으로 알림을 저장하지 않는다. 같은 시리즈의 앞으로 규칙은 기존 경계의 시각/날짜 표현을 이어 쓰며 서로 비교할 수 없는 경계를 섞지 않는다. 개별 설정 해제는 화면의 현재 형식에서 기준을 새로 만들지 않고 저장된 개별 규칙을 대상으로 한다.
+A recurring occurrence's original time and original local date are kept as identity evidence independent of the current timed/all-day display format. If a stored date basis overlaps multiple occurrences of the same series, it stays "needs confirmation" and no reminder is saved on an ambiguous basis. A future rule in the same series continues the existing boundary's time/date representation and never mixes incomparable boundaries. Clear override targets the stored per-event rule rather than building a new basis from the view's current format.
 
-시간 일정은 시작 절대시각에서 간격을 뺀다. 종일 일정은 현지 날짜에서 일수를 빼고 벽시계 시각을 적용한다. DST로 없는 시각은 다음 유효 시각, 중복 시각은 첫 시각을 쓴다. 종일·시간 형식 변경은 사용자 확인 없이 옛 설정을 재해석하지 않는다.
+Timed events subtract the offset from the absolute start instant. All-day events subtract days from the local date and apply the wall-clock time. A time skipped by DST uses the next valid time; a repeated time uses the first occurrence. A change between all-day and timed format does not reinterpret old settings without user confirmation.
 
-앞으로 1년 조회 범위에서 가까운 알림 최대 48개를 우선 예약하고 나머지는 보류한다. 제한 수는 구현에서 조정할 수 있다. 멀리 있는 개별 일정은 직접 재확인하여 예약할 수 있다. 앱 실행 중 재조정하며 실제 예약 수·보류 수·최근 예약 확인을 표시한다. 설정상 켜짐과 실제 예약 성공은 다르다.
+Within a one-year forward query range, up to 48 nearest reminders are scheduled first and the rest are deferred. The limit can be adjusted in the implementation. A distant individual event can be rechecked directly to schedule it. Rebalancing happens while the app runs, and the scheduled count, deferred count, and last scheduling check are shown. Enabled in settings differs from actually scheduled.
 
-앱 종료 뒤에도 미리 예약한 알림은 남는다. 종료 중 일정 변경·삭제·권한 회수는 다음 실행 전 반영되지 않아 예전 제목의 알림이 표시될 수 있다. 다음 실행에서 확인하면 정리한다. 알림을 눌렀을 때는 과거 payload만 믿지 않고 현재 권한·선택·일정 정체성을 재확인한다. 원본 일정의 알림 수정, 서버·모바일 푸시, 별도 상주 프로세스, 다시 알림은 제공하지 않는다.
+Pre-scheduled reminders remain after the app quits. Event changes, deletions, and permission revocation while the app is quit are not reflected until the next launch, so a reminder with an old title may appear. They are cleaned up when checked at the next launch. When a reminder is clicked, the app does not trust the past payload alone and rechecks current permission, selection, and event identity. Editing the source event's alerts, server/mobile push, a separate resident process, and snooze are not provided.

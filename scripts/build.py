@@ -14,12 +14,12 @@ shutil.copy2(pathlib.Path(bindir) / "CalendarBar", macos / "CalendarBar")
 shutil.copy2(root / "Resources/AppIcon.icns", app / "Contents/Resources/AppIcon.icns")
 info = {
     "CFBundleExecutable": "CalendarBar", "CFBundleIdentifier": "local.ian.CalendarBar",
-    "CFBundleName": "CalendarBar", "CFBundleDisplayName": "캘린더 바",
+    "CFBundleName": "CalendarBar", "CFBundleDisplayName": "Calendar Bar",
     "CFBundlePackageType": "APPL", "CFBundleIconFile": "AppIcon", "CFBundleVersion": "1", "CFBundleShortVersionString": "1.0",
     "LSMinimumSystemVersion": "14.0", "LSUIElement": True,
     "NSHighResolutionCapable": True,
-    "NSCalendarsFullAccessUsageDescription": "선택한 캘린더의 일정을 읽어서 표시합니다. 일정을 추가하거나 수정하지 않습니다.",
-    "NSCalendarsUsageDescription": "선택한 캘린더의 일정을 읽어서 표시합니다."
+    "NSCalendarsFullAccessUsageDescription": "Reads and shows events from the calendars you select. It never adds or changes events.",
+    "NSCalendarsUsageDescription": "Reads and shows events from the calendars you select."
 }
 with (app / "Contents/Info.plist").open("wb") as out:
     plistlib.dump(info, out)

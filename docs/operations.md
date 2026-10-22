@@ -1,24 +1,24 @@
-# 빌드와 사용
+# Build and Use
 
-검증 환경은 macOS 26.3.1 Apple Silicon, Xcode 설치, Swift 6.3.3이다. 패키지 최소 타깃은 macOS 14이며 구버전 실기 검증은 하지 않았다. 외부 패키지 설치는 필요 없다.
+The verification environment is macOS 26.3.1 on Apple Silicon with Xcode installed and Swift 6.3.3. The package's minimum target is macOS 14; it has not been verified on older hardware/OS. No external packages need to be installed.
 
-`python3 scripts/verify.py`는 테스트 후 release 빌드를 하고 `build/CalendarBar.app`에 실행 파일과 Info.plist를 묶어 로컬 ad-hoc 서명과 서명 검증을 수행한다. 유료 개발자 계정·공증·앱스토어 배포가 포함된 명령이 아니다. 앱 아이콘은 `Resources/AppIcon.icns`를 번들에 복사해 쓴다. 디자인을 바꾸면 `swift scripts/make_icon.swift <임시>/AppIcon.iconset` 후 `iconutil -c icns <임시>/AppIcon.iconset -o Resources/AppIcon.icns`로 다시 만든다. 일반 실행은 `open build/CalendarBar.app`이다. 로그인 등록은 앱 경로를 사용하므로 사용 중인 번들을 이동하면 로그인 실행 상태를 다시 확인한다.
+`python3 scripts/verify.py` runs tests, then a release build, bundles the executable and Info.plist into `build/CalendarBar.app`, and performs local ad-hoc signing and signature verification. It does not involve a paid developer account, notarization, or App Store distribution. The app icon is `Resources/AppIcon.icns`, copied into the bundle. When the design changes, regenerate it with `swift scripts/make_icon.swift <temp>/AppIcon.iconset` followed by `iconutil -c icns <temp>/AppIcon.iconset -o Resources/AppIcon.icns`. Normal launch is `open build/CalendarBar.app`. Login registration uses the app path, so if you move the bundle in use, recheck the launch-at-login state.
 
-macOS 인터넷 계정에서 Google 캘린더 동기화를 켜고 Apple 캘린더에 일정이 보이는지 확인한다. 앱에서 캘린더 연결을 누른 후 권한은 사용자가 허용한다. 표시할 캘린더를 고른다. 구글에서 수정한 일정은 macOS 동기화 이후 반영되며 즉시 반영을 보장하지 않는다.
+Turn on Google Calendar sync in macOS Internet Accounts and confirm events appear in Apple Calendar. After pressing "Connect Calendar" in the app, the user grants permission. Choose the calendars to display. Events edited in Google are reflected after macOS sync; immediate reflection is not guaranteed.
 
-자동 실행을 건드리지 않는 제한 실행은 `python3 scripts/run.py 120 build/CalendarBar.app/Contents/MacOS/CalendarBar --smoke --show`다. 이것은 로그인 실행 검증이 아니다. 테스트 종료 시 프로세스 종료를 확인한다. 실제 로그인 실행은 정상 모드 등록 상태와 사용자의 재로그인 확인을 따로 기록한다.
+A time-limited run that does not touch auto-launch is `python3 scripts/run.py 120 build/CalendarBar.app/Contents/MacOS/CalendarBar --smoke --show`. This is not launch-at-login verification. Confirm process exit when the test ends. Real launch at login is recorded separately as normal-mode registration state and the user's re-login confirmation.
 
 
-## 합성 일정과 알림 실행
+## Synthetic Events and Reminder Runs
 
-먼저 `python3 scripts/verify.py`로 정상 앱을 만든다. 기존 QA 앱이 실행 중이지 않고 `build/CalendarBarQA.app`이 없는 상태에서 `python3 scripts/prepare_qa.py`를 실행한다. 정상 번들을 복사하여 표시 이름 Calendar Bar QA, 식별자 `local.ian.CalendarBar.qa`로 구별하고 다시 ad-hoc 서명한다. 실제 사용 중인 Applications 설치본은 교체하지 않는다.
+First build the normal app with `python3 scripts/verify.py`. With no existing QA app running and no `build/CalendarBarQA.app`, run `python3 scripts/prepare_qa.py`. It copies the normal bundle, distinguishes it with display name Calendar Bar QA and identifier `local.ian.CalendarBar.qa`, and ad-hoc signs it again. The Applications install in actual use is not replaced.
 
-`python3 scripts/run_qa.py 300 build/CalendarBarQA.app --qa --qa-window --qa-notifications --qa-seed "$(python3 -c 'import time; print(int(time.time()) + 180)')"`는 LaunchServices로 별도 QA 앱을 열고 5분 뒤 해당 경로의 프로세스만 정리한다. 종료 후 `QA_PROCESS_ABSENT`를 확인한다. 메뉴 전용 창 접근이 안 되면 `--qa-window`가 동일 화면 컴포넌트를 일반 창으로 보여 준다. 이 창의 렌더 확인과 실제 메뉴 팝오버 확인은 구별한다.
+`python3 scripts/run_qa.py 300 build/CalendarBarQA.app --qa --qa-window --qa-notifications --qa-seed "$(python3 -c 'import time; print(int(time.time()) + 180)')"` opens the separate QA app via LaunchServices and after 5 minutes cleans up only processes at that path. After exit, confirm `QA_PROCESS_ABSENT`. If the menu-only window is inaccessible, `--qa-window` shows the same view component in a regular window. Distinguish rendering checks in this window from checks of the real menu popover.
 
-QA의 알림 opt-in과 합성 기준 시각은 `~/Library/Application Support/local.ian.CalendarBar.qa/qa-launch.json`, 알림 설정은 같은 디렉터리의 `qa-reminders.json`에 저장된다. `.qa` 식별자는 인자 없이 다시 실행해도 이 설정과 합성 데이터를 사용하며 로그인 항목을 등록하지 않는다. 일반 `--smoke`는 실제 알림을 예약하지 않는다.
+QA's reminder opt-in and synthetic base time are stored in `~/Library/Application Support/local.ian.CalendarBar.qa/qa-launch.json`, and reminder settings in `qa-reminders.json` in the same directory. The `.qa` identifier uses these settings and synthetic data even when relaunched without arguments, and does not register a login item. A plain `--smoke` does not schedule real reminders.
 
-OS 검증은 QA의 알림 권한을 허용한 뒤 가까운 합성 일정에 두 시간을 저장하고 실제 예약 수를 확인한다. 트리거 전에 QA 앱을 완전히 종료하고 도착한 알림과 콜드 클릭 목적일을 확인한다. 두 번째는 앱이 다른 날짜를 표시하는 동안 클릭하여 웜 이동을 확인한다. 개인 일정 원본을 만들거나 바꾸지 않는다. 검사 후 QA 규칙을 끄고 앱 소유 예약·전달 상태를 확인하며 시험 전에 꺼져 있던 QA 알림 허용은 원상복구한다.
+For OS verification, allow QA's notification permission, save two times on a near synthetic event, and check the scheduled count. Fully quit the QA app before the trigger, then check the arriving reminder and the cold-click target date. Second, click while the app shows a different date to check warm navigation. Do not create or modify personal source events. After the check, turn off the QA rules, check app-owned scheduled/delivered state, and restore QA notification permission if it was off before the test.
 
-권한 요청이 오류로 끝나면 시스템 설정의 해당 QA 항목 등록·허용 상태를 읽어 확인한다. 다른 앱이나 전역 미러링/공유 알림 정책을 바꾸지 않는다. 코드 서명 검증 성공과 실제 알림 허용·전달 성공은 별개다. 다른 보조 실행 파일이 같은 bundle ID를 사용해도 원래 앱의 알림 조회 권한과 같다고 가정하지 않는다.
+If the permission request ends in an error, read the registration/permission state of that QA entry in System Settings. Do not change other apps or global mirroring/sharing notification policies. Successful code signature verification and actual notification permission/delivery success are separate. Do not assume another helper executable using the same bundle ID has the same notification query permission as the original app.
 
-`.qa` 번들의 원래 CalendarBar 실행 파일에 `--qa-notification-report`를 주면 10초 이내에 자체 요청 식별자·예약/전달 시각·권한 수치를 JSON으로 출력하고 종료한다. 예: `python3 scripts/run.py 15 build/CalendarBarQA.app/Contents/MacOS/CalendarBar --qa-notification-report`. 별도 probe 실행 파일을 넣지 않는다. 일반 번들은 `qa_bundle_required`를 반환하며 이 경로는 일정 조회·설정 저장·알림 추가/취소를 실행하지 않는다. 제목·본문·userInfo는 출력하지 않는다.
+Passing `--qa-notification-report` to the original CalendarBar executable in the `.qa` bundle prints its own request identifiers, scheduled/delivered times, and permission values as JSON within 10 seconds and exits. Example: `python3 scripts/run.py 15 build/CalendarBarQA.app/Contents/MacOS/CalendarBar --qa-notification-report`. No separate probe executable is added. A normal bundle returns `qa_bundle_required`, and this path does not query events, save settings, or add/cancel reminders. Title, body, and userInfo are not printed.

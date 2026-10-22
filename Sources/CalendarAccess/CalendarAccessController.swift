@@ -44,7 +44,7 @@ public protocol CalendarBackend: Sendable {
     public var state: CalendarViewState { snapshot(for: .month).state }
     public var events: [EventOccurrence] { snapshot(for: .month).events }
     public var effectiveSelectedCalendarIDs: Set<String> { selectedCalendarIDs.intersection(calendars.map(\.id)) }
-    public var errorMessage: String? { state == .failed ? "캘린더를 불러오지 못했습니다. 다시 시도해 주세요." : nil }
+    public var errorMessage: String? { state == .failed ? "Couldn't load calendars. Please try again." : nil }
     @ObservationIgnored private let backend: any CalendarBackend
     @ObservationIgnored private let storage: any CalendarSelectionStorage
     @ObservationIgnored private var epoch = 0

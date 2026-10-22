@@ -105,7 +105,7 @@ private actor NotificationFake: ReminderNotificationBackend {
         try await model.setHideContent(true)
         let pending = await backend.pending()
         XCTAssertEqual(pending.count, 2)
-        XCTAssertTrue(pending.allSatisfy { !$0.title.contains("PRIVATE") && $0.body == "캘린더에서 일정을 확인하세요." })
+        XCTAssertTrue(pending.allSatisfy { !$0.title.contains("PRIVATE") && $0.body == "Check the event in Calendar." })
         XCTAssertFalse(String(data: try JSONEncoder().encode(storage.value), encoding: .utf8)!.contains("PRIVATE"))
         XCTAssertNotNil(model.clickLink(token: pending[0].token))
         await model.refresh()
@@ -165,7 +165,7 @@ private actor NotificationFake: ReminderNotificationBackend {
         for _ in 0..<100 { await Task.yield() }
         await backend.resume(); try await again.value; try await hiding.value
         let hidden = await backend.pending(); XCTAssertEqual(hidden.count, 2)
-        XCTAssertTrue(hidden.allSatisfy { $0.title == "일정 알림" })
+        XCTAssertTrue(hidden.allSatisfy { $0.title == "Event reminder" })
     }
     func testPermissionLossAndNormalExit() async throws {
         let calendar = CalendarFake(); let backend = NotificationFake(); let item = event(); calendar.items = [item]
@@ -265,7 +265,7 @@ private actor NotificationFake: ReminderNotificationBackend {
         await backend.markDelivered(original.map(\.id))
         calendar.items = []; calendar.resolution = .failed
         try await model.setHideContent(true)
-        let hidden = await backend.pending(); XCTAssertTrue(hidden.allSatisfy { $0.title == "일정 알림" })
+        let hidden = await backend.pending(); XCTAssertTrue(hidden.allSatisfy { $0.title == "Event reminder" })
         let delivered = await backend.deliveredIdentifiers(); XCTAssertTrue(delivered.isEmpty)
         // Simulate a process crash after the durable privacy setting changed but
         // before prior displayed content could be removed.
@@ -393,7 +393,7 @@ private actor NotificationFake: ReminderNotificationBackend {
         calendar.fail = true; try await model.setHideContent(true)
         let after = await backend.pending()
         XCTAssertEqual(Set(before.map(\.id)), Set(after.map(\.id)))
-        XCTAssertTrue(after.allSatisfy { $0.title == "일정 알림" && $0.body == "캘린더에서 일정을 확인하세요." })
+        XCTAssertTrue(after.allSatisfy { $0.title == "Event reminder" && $0.body == "Check the event in Calendar." })
         let delivered = await backend.deliveredIdentifiers(); XCTAssertTrue(delivered.isEmpty)
     }
     func testReviewPermissionRequestFailureObservable() async throws {

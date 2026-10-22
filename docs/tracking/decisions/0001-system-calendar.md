@@ -1,13 +1,13 @@
-# 시스템 캘린더를 통한 읽기
+# Reading Through the System Calendar
 
-## 배경
+## Context
 
-사용자는 날짜와 일정 유무만 확인하며 일정 추가·수정은 구글 캘린더에서 계속한다. 개인 도구에 별도 인증 관리가 필요하지 않다.
+The user only checks dates and whether events exist, and keeps adding and editing events in Google Calendar. A personal tool should not need its own authentication management.
 
-## 결정
+## Decision
 
-맥에 등록한 계정의 일정을 EventKit으로 읽고 사용자가 선택한 캘린더만 표시한다. 설정만 로컬에 저장한다.
+Read events from accounts registered on the Mac via EventKit and display only the calendars the user selects. Only settings are stored locally.
 
-## 대안과 결과
+## Alternatives and Consequences
 
-앱에서 직접 구글 로그인하는 방식은 맥 계정과 독립적이지만 인증 설정과 토큰 관리가 추가된다. 사용자는 시스템 계정 방식을 선택했다. 따라서 앱 단독으로 구글 계정을 연결하지 않으며 시스템의 캘린더 동기화가 필요하다. 동기화 이전의 서버 변경은 이 앱이 바로 가져올 수 없다.
+Signing into Google directly in the app is independent of the Mac's accounts but adds authentication setup and token management. The user chose the system account approach. Therefore the app does not connect a Google account on its own, and system calendar sync is required. Server changes made before sync cannot be fetched immediately by this app.
