@@ -1,5 +1,7 @@
 # Calendar Bar
 
+**English** | [한국어](README.ko.md)
+
 **A small macOS calendar in the menu bar for finding events, viewing them together, and getting reminders.**
 Click the icon to open a monthly calendar; click outside to close it. No main window or Dock icon.
 
