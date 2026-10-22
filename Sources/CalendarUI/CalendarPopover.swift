@@ -35,6 +35,7 @@ import ServiceManagement
         }
         .frame(width: 340, height: 600)
         .background(Color(nsColor: .windowBackgroundColor))
+        .environment(\.locale, Locale(identifier: "en_US"))
         .onDisappear { resetPaging() }
         .onChange(of: model.access.permission) { _, _ in model.clearInaccessibleEditor() }
         .onChange(of: model.access.calendars) { _, _ in model.clearInaccessibleEditor() }

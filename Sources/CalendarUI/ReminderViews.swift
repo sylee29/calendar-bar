@@ -128,7 +128,7 @@ extension ReminderDeliveryState {
         VStack(alignment: .leading, spacing: 12) {
             Text("Reminders").font(.headline)
             Text("\(reminders.scheduled) scheduled · \(reminders.deferred) deferred · \(reminders.needsConfirmation) need confirmation").font(.caption)
-            if let date = reminders.lastScheduled { Text("Last checked: \(date.formatted(date: .abbreviated, time: .shortened))").font(.caption).foregroundStyle(.secondary) }
+            if let date = reminders.lastScheduled { Text("Last checked: \(date.formatted(Date.FormatStyle(date: .abbreviated, time: .shortened).locale(Locale(identifier: "en_US"))))").font(.caption).foregroundStyle(.secondary) }
             else { Text("No reminders scheduled yet.").font(.caption).foregroundStyle(.secondary) }
             Button("Recheck Schedule") { Task { await reminders.retry() } }
             ReminderPermissionView(reminders: reminders)
